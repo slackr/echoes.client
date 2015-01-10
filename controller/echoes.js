@@ -1,6 +1,3 @@
-var ws_server = 'wss://io.echoes.im/';
-//var ws_server = 'ws://localhost:3000/'; //dev
-
 var $me = null;
 var $ec = null;
 var $ui = null;
@@ -16,7 +13,7 @@ $(document).ready(function() {
     get_me();
 
     $ui.log("connecting to " + ws_server + " as '" + $me + "' with session_id: " + session_id, 1);
-    socket = io(ws_server, {
+    socket = io(AppConfig.WS_SERVER, {
         query: encodeURI('session_id=' + session_id + '&nickname=' + $me),
     });
 
