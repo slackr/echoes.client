@@ -1,0 +1,81 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font: 15px Verdana, Helvetica, Arial;
+    height: 100%;
+}
+
+form input#e {
+    color: rgb(92, 92, 92);
+    border: 2px rgb(0, 95, 125) solid;
+    padding: 8px;
+    width: 75%;
+    margin-right: .5%;
+    font-size: 20px;
+}
+form select#c {
+    color: rgb(92, 92, 92);
+    border: 2px rgb(0, 95, 125) solid;
+    padding: 8px;
+    width: 15%;
+    margin-right: .5%;
+    font-size: 20px;
+}
+
+
+form button {
+    width: 9%;
+    color: white;
+    font-weight: bold;
+    background: rgb(0, 95, 125);
+    border: 2px rgb(0, 95, 125) solid;
+    padding: 8px;
+    font-size: 20px;
+}
+
+#echoes {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+
+#echoes li {
+    padding: 5px 10px;
+}
+
+#echoes li:nth-child(odd) {
+    background: #eee;
+}
+
+#menubar {
+    background: rgb(0, 95, 125);
+    padding: 3px;
+    position: absolute;
+    top: 0;
+    color: white;
+    font-weight: bold;
+    width: 100%;
+    height: 50px;
+}
+
+#window {
+    position: fixed;
+    width: 100%;
+    top: 50px;
+    bottom: 50px;
+    overflow-y: auto;
+}
+
+#input {
+    background: none;
+    padding: 3px;
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 50px;
+}
