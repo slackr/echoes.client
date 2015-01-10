@@ -12,9 +12,11 @@ $(document).ready(function() {
 
     get_me();
 
-    $ui.log("connecting to " + ws_server + " as '" + $me + "' with session_id: " + session_id, 1);
+    var socket_query = encodeURI('session_id=' + session_id + '&nickname=' + $me);
+    $ui.log("connecting to " + AppConfig.WS_SERVER + "?" + socket_query + " as '" + $me + "' with session_id: " + session_id, 1);
+
     socket = io(AppConfig.WS_SERVER, {
-        query: encodeURI('session_id=' + session_id + '&nickname=' + $me),
+        query: socket_query,
     });
 
     socket.on('error', function(e) {
