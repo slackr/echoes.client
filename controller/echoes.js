@@ -32,7 +32,7 @@ $(document).ready(function() {
         $ui.status('Disconnected :(');
     });
 
-    $('form').submit(function(){
+    $ui.ui.form.submit(function(){
         try{
             send_echo();
         } catch (e) {
@@ -49,33 +49,24 @@ $(document).ready(function() {
 
     socket.on('*join', function(join) {
         if (join.nickname == $me) {
-            $("#c option[value='" + join.channel + "']").remove();
-            $('#c').append(
-                $('<option>')
-                    .val(join.channel)
-                    .html(join.channel)
-                    .attr('selected', 'selected')
-            );
+            $ui.remove_channel(join.channel);
+            $ui.add_channel(join.channel);
         }
 
         $ui.status(join.nickname + ' joined ' + join.channel);
     });
     socket.on('*part', function(part) {
         if (part.nickname == $me) {
-            $("#c option[value='" + part.channel + "']").remove();
+            $ui.remove_channel(part.channel);
         }
         $ui.status(part.nickname + ' parted ' + part.channel);
     });
 
     socket.on('*ulist', function(list){
-        $('#c').html('');
+        $ui.clear_channels();
 
         for (var i in list.channels) {
-            $('#c').append(
-                $('<option>')
-                    .val(list.channels[i])
-                    .html(list.channels[i])
-            );
+            $ui.add_channel(list.channels[i]);
         }
     });
     socket.on('*list', function(list){
@@ -110,7 +101,7 @@ $(document).ready(function() {
         $ui.log(message, 3);
     });
 
-    $('form input').focus();
+    $ui.ui.input.focus();
 });
 
 function send_echo() {
@@ -118,9 +109,9 @@ function send_echo() {
         $ui.status('Not connected!');
         return;
     }
-    var echo = $('#e').val();
+    var echo = $ui.ui.input.val();
     var split = echo.trim().split(' ');
-    var channel = $('#c option:selected').val();
+    var channel = $ui.active_channel().val();
 
     if (echo == '') {
         $ui.ui.input.focus();
@@ -133,8 +124,8 @@ function send_echo() {
         socket.emit('/echo', { echo: echo, channel: channel });
     }
 
-    $('#e').val('');
-    $('#e').focus();
+    $ui.ui.input.val('');
+    $ui.ui.input.focus();
 }
 
 function execute_command(params) {
@@ -176,7 +167,7 @@ function execute_command(params) {
 function join_channels() {
     var joined_channels = [];
     $ui.log('Auto-joining channels...', 1);
-    $('#c option').each(function (){
+    $ui.joined_channels.each(function() {
         execute_command(['/join', $(this).val()]);
     });
 }

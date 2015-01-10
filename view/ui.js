@@ -5,6 +5,8 @@ function EchoesUi() {
         window: $("#window"),
         echoes: $("#echoes"),
         input: $('#e'),
+        channels: $('#c'),
+        form: $('form'),
     }
 }
 
@@ -32,3 +34,28 @@ EchoesUi.prototype.status = function(status) {
 EchoesUi.prototype.error = function(error) {
     this.status('ERROR: ' + error);
 };
+
+EchoesUi.prototype.active_channel = function() {
+    return this.ui.channels.find('option:selected');
+}
+
+EchoesUi.prototype.joined_channels = function() {
+    return this.ui.channels.find('option');
+}
+
+EchoesUi.prototype.remove_channel = function(chan) {
+    $ui.channels.find("option[value='" + chan + "']").remove();
+}
+
+EchoesUi.prototype.clear_channels = function() {
+    $ui.channels.html('');
+}
+
+EchoesUi.prototype.add_channel = function(chan) {
+    $ui.channels.append(
+        $('<option>')
+            .val(chan)
+            .html(chan)
+            .attr('selected', 'selected')
+    );
+}
