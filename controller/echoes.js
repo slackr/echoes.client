@@ -47,7 +47,7 @@ $(document).ready(function() {
 function send_echo() {
     var echo = $ui.ui.input.val();
     var split = echo.trim().split(' ');
-    var channel = $ui.active_channel().text();
+    var to = $ui.active_window().attr('windowname');
 
     if (echo == '') {
         $ui.ui.input.focus();
@@ -57,7 +57,7 @@ function send_echo() {
     if (split[0][0] == '/') {
         execute_command(split);
     } else {
-        socket.emit('/echo', { echo: echo, channel: channel });
+        socket.emit('/echo', { echo: echo, to: to });
     }
 
     $ui.ui.input.val('');
@@ -80,18 +80,7 @@ function execute_command(params) {
             send_encrypted_echo(nick, eecho_plaintext);
         break;
         case '/keyx':
-            $ec.generate_keypair('encrypt').then(function() {
-                $ui.log('Key generated, exporting...');
-                $ec.export_public_key('encrypt').then(function() {
-                    $ui.log('Key exported, sending broadcast...');
-                    socket.emit('!keyx', {
-                        to: params[0],
-                        pubkey: $ec.jwk_exported_key
-                    });
-                })
-            }).catch(function(e) {
-                $ui.error('Failed to generate key: ' + e.toString());
-            });;
+            keyx_send_key(params[0]);
         break;
         default:
             socket.emit(command, params);
@@ -101,10 +90,37 @@ function execute_command(params) {
 }
 
 function join_channels() {
-    var joined_channels = [];
     $ui.log('Auto-joining channels...', 1);
     $ui.joined_channels().each(function() {
-        execute_command(['/join', $(this).text()]);
+        execute_command(['/join', $(this).attr('windowname')]);
+    });
+}
+
+function keyx_new_key(to) {
+    $ui.status('Generting new encryption key...');
+    $ec.generate_keypair('encrypt').then(function() {
+        $ui.log('key generated, exporting...');
+        $ec.export_public_key('encrypt').then(function() {
+            $ui.log('key exported.');
+            keyx_send_key(to);
+        })
+    }).catch(function(e) {
+        $ui.error('failed to generate key: ' + e.toString());
+    });
+}
+
+function keyx_send_key(to) {
+    if (typeof $ec == 'undefined'
+        || $ec.jwk_exported_key == null) {
+        $ui.log('generating new key...', 1);
+        keyx_new_key(to);
+        return;
+    }
+
+    $ui.log('found existing key, broadcasting...', 1);
+    socket.emit('!keyx', {
+        to: to,
+        pubkey: $ec.jwk_exported_key
     });
 }
 
@@ -168,22 +184,32 @@ function init_socket() {
 function setup_callbacks() {
     socket.on('*me', function(me) {
         $me = me;
-        $ui.status('You are ' + $me + ', say something...');
+        $ui.status('You are ' + $me + ', say something...', 'echoes');
     });
 
     socket.on('*join', function(join) {
-        if (join.nickname == $me) {
-            $ui.remove_channel(join.channel);
-            $ui.add_channel(join.channel);
+        var chan = join.channel;
+        var nick = join.nickname;
+
+        if (nick == $me) {
+            $ui.add_channel(chan);
+            $ui.show_window(chan);
         }
 
-        $ui.status((join.nickname == $me ? 'You have' : join.nickname) + ' joined ' + join.channel);
+        $ui.status((nick == $me ? 'You have' : nick) + ' joined ' + chan, chan);
     });
     socket.on('*part', function(part) {
-        if (part.nickname == $me) {
-            $ui.remove_channel(part.channel);
+        var chan = part.channel;
+        var nick = part.nickname;
+        var reason = part.reason;
+        var and_echoes = false;
+
+        if (nick == $me) {
+            $ui.remove_channel(chan);
+            $ui.show_window('echoes');
+            and_echoes = true;
         }
-        $ui.status((part.nickname == $me ? 'You have' : join.nickname) + ' parted ' + part.channel);
+        $ui.status((nick == $me ? 'You have' : nick) + ' parted ' + chan + (reason ? ' (' + reason + ')' : ''), chan, and_echoes);
     });
 
     socket.on('*ulist', function(list){
@@ -194,14 +220,14 @@ function setup_callbacks() {
         }
     });
     socket.on('*list', function(list){
-        $ui.status('Channel listing: ' + list.channels.join(', '));
+        $ui.status('Channel listing: ' + list.channels.join(', '), null, true);
     });
     socket.on('*who', function(who){
-        $ui.status('Active nicknames: ' + who.nicknames.join(', '));
+        $ui.status('Active nicknames: ' + who.nicknames.join(', '), null, true);
     });
 
     socket.on('*echo', function(echo){
-        $ui.echo(echo.nickname + ' ))) ' + (echo.channel ? echo.channel : '') + ' ' + echo.echo);
+        $ui.echo(echo.nickname + ' ))) ' + (echo.to ? echo.to : '') + ' ' + echo.echo, echo.to);
     });
 
     socket.on('*keyx', function(data){
@@ -221,7 +247,7 @@ function setup_callbacks() {
     });
 
     socket.on('*error', function(message){
-        $ui.error(message);
+        $ui.error(message, null, true);
         $ui.log(message, 3);
     });
 
@@ -252,9 +278,9 @@ function setup_callbacks() {
         join_channels();
     });
     socket.on('connect', function() {
-        $ui.status('Connected!');
+        $ui.status('Connected!', null, true);
     });
     socket.on('disconnect', function() {
-        $ui.status('Disconnected :(');
+        $ui.status('Disconnected :(', null, true);
     });
 }

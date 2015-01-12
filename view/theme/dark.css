@@ -1,0 +1,48 @@
+body {
+    font-family: 'Roboto-Medium', 'Century Gothic', CenturyGothic, AppleGothic, sans-serif;
+}
+
+.theme_bg_light {
+   background-color: rgb(232, 232, 232);
+}
+.theme_bg_dark {
+   background-color: rgb(54, 54, 54);
+}
+.theme_bg_white {
+   background-color: rgb(255, 255, 255);
+}
+.theme_bg_black {
+   background-color: rgb(0, 0, 0);
+}
+.theme_bg_transparent {
+    background: transparent;
+}
+
+.theme_border-bottom_dark {
+    border-bottom: rgb(132, 132, 132);
+}
+
+.theme_color_light {
+    color: rgb(232, 232, 232);
+}
+.theme_color_white {
+    color: rgb(255, 255, 255);
+}
+.theme_color_black {
+    color: rgb(0, 0, 0);
+}
+.theme_color_dark {
+    color: rgb(54, 54, 54);
+}
+
+.theme_selected_window, #nicknames > li:hover, #channels > li:hover {
+    background: rgb(232, 232, 232);
+    color: rgb(54, 54, 54);
+}
+
+.theme_bold {
+    font-weight: bold;
+}
+.theme_shadow {
+    box-shadow: 0px 0px 3px 0px rgb(0, 0, 0);
+}
