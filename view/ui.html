@@ -3,8 +3,10 @@
 <head>
     <title>echoes.im</title>
     <link href="/client/view/ui.css" rel="stylesheet" type="text/css" />
+    <link href="https://fonts.googleapis.com/css?family=Roboto:400,100,300,500" rel="stylesheet" type="text/css" />
     <script type="text/javascript" src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js"></script>
     <script type="text/javascript" src="/client/lib/config.js"></script>
     <script type="text/javascript" src="/client/lib/object.js"></script>
     <script type="text/javascript" src="/client/lib/crypto.js"></script>
@@ -12,14 +14,27 @@
     <script type="text/javascript" src="/client/controller/echoes.js"></script>
 </head>
 <body>
-    <div id="menubar"></div>
-    <div id="window">
+    <ul id="menubar">
+        <li id="menu_nicknames">&#8801;</li>
+        <li id="menu_channels">#</li>
+    </ul>
+    <div id="wall">
         <ul id="echoes"></ul>
     </div>
     <div id="input">
-        <form action="">
-            <select id="c" autocomplete="off" /><input id="e" autocomplete="off" /><button>)))</button>
-        </form>
+        <div id="input_wrapper">
+            <input id="echo_input" autocomplete="off" maxlength="140" placeholder=")))" />
+        </div>
     </div>
-  </body>
+
+    <div id="me">
+        <div id="me_wrapper">
+            <input id="me_input" autocomplete="off" maxlength="20" placeholder="" />
+        </div>
+    </div>
+    <div id="close_lists"></div>
+    <ul id="nicknames"></ul>
+    <ul id="channels"></ul>
+    </div>
+</body>
 </html>

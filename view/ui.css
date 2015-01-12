@@ -5,36 +5,28 @@
 }
 
 body {
-    font: 15px Verdana, Helvetica, Arial;
+    font-family: 'Roboto-Medium', 'Century Gothic', CenturyGothic, AppleGothic, sans-serif;
+    font-size: 15px;
     height: 100%;
 }
 
-form input#e {
-    color: rgb(92, 92, 92);
-    border: 2px rgb(0, 95, 125) solid;
-    padding: 8px;
-    width: 75%;
-    margin-right: .5%;
-    font-size: 20px;
-}
-form select#c {
-    color: rgb(92, 92, 92);
-    border: 2px rgb(0, 95, 125) solid;
-    padding: 8px;
-    width: 15%;
-    margin-right: .5%;
-    font-size: 20px;
+#echo_input, #me_input  {
+    color: rgb(232, 232, 232);
+    background: transparent;
+    border: 0px;
+    font-size: 25px;
 }
 
+#echo_input:focus, #me_input:focus {
+    outline: none;
+}
 
-form button {
-    width: 9%;
-    color: white;
-    font-weight: bold;
-    background: rgb(0, 95, 125);
-    border: 2px rgb(0, 95, 125) solid;
-    padding: 8px;
-    font-size: 20px;
+#echo_input {
+    width: 100%;
+}
+#me_input {
+    width: 100%;
+    text-align: center;
 }
 
 #echoes {
@@ -45,25 +37,14 @@ form button {
 }
 
 #echoes li {
-    padding: 5px 10px;
+    padding: 10px;
 }
 
 #echoes li:nth-child(odd) {
-    background: #eee;
+    background: rgb(232, 232, 232);
 }
 
-#menubar {
-    background: rgb(0, 95, 125);
-    padding: 3px;
-    position: absolute;
-    top: 0;
-    color: white;
-    font-weight: bold;
-    width: 100%;
-    height: 50px;
-}
-
-#window {
+#wall {
     position: fixed;
     width: 100%;
     top: 50px;
@@ -71,11 +52,97 @@ form button {
     overflow-y: auto;
 }
 
-#input {
-    background: none;
-    padding: 3px;
+#menubar, #input {
+    background: rgb(32, 32, 32);
+    padding: 10px;
     position: absolute;
-    bottom: 0;
     width: 100%;
     height: 50px;
+    list-style-type: none;
+    font-size: 25px;
+    font-weight: bold;
+    color: white;
+}
+#menubar {
+    z-index: 101;
+    top: 0;
+}
+#input {
+    bottom: 0;
+}
+
+#input_wrapper, #me_wrapper {
+    padding: 3px;
+    border-bottom: 2px rgb(131, 131, 131) solid;
+}
+
+::-webkit-input-placeholder {
+   opacity: 0.5 !important;
+}
+
+#menu_channels {
+    cursor: pointer;
+    float: left;
+}
+#menu_nicknames {
+    cursor: pointer;
+    float: right;
+}
+
+#nicknames, #channels {
+    list-style-type: none;
+    width: 200px;
+    position: fixed;
+    top: 50px;
+    height: 100%;
+    background: rgb(32, 32, 32);
+    display: none;
+    z-index: 100;
+    font-size: 15px;
+    font-weight: bold;
+    color: rgb(232, 232, 232);
+    padding: 10px;
+}
+
+#nicknames > li, #channels > li {
+    cursor: pointer;
+    padding: 10px;
+    overflow: hidden;
+}
+
+.selected_channel, #nicknames > li:hover, #channels > li:hover {
+    background: rgb(232, 232, 232);
+    color: rgb(0, 0, 0);
+}
+
+#nicknames {
+    right: 0;
+}
+#channels {
+    left: 0;
+}
+
+#close_lists, #me {
+    position: fixed;
+    height: 100%;
+    width: 100%;
+    display: none;
+}
+
+#close_lists {
+    z-index: 99;
+    background: none;
+}
+
+#me {
+    z-index: 200;
+    background: black;
+    opacity: 0.9;
+}
+#me_wrapper {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-left: -200px;
+    width: 400px;
 }
