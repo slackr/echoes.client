@@ -130,3 +130,14 @@ body {
     margin-left: -200px;
     width: 400px;
 }
+
+#encrypt {
+    cursor: pointer;
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    padding: 10px;
+}
+#encrypt_img {
+    display: none;
+}

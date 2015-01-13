@@ -1,6 +1,14 @@
 function EchoesUi() {
     EchoesObject.call(this, 'ui');
 
+    this.assets = {
+        encrypt: {
+            unencrypted: '/client/assets/unencrypted.png',
+            encrypted: '/client/assets/encrypted.png',
+            oneway: '/client/assets/oneway.png',
+        }
+    }
+
     this.ui = {
         wall: $("#wall"),
         echoes: $("#echoes"),
@@ -13,6 +21,7 @@ function EchoesUi() {
         buttons: {
             nicknames: $('#menu_nicknames'),
             channels: $('#menu_channels'),
+            encrypt: $('#encrypt_img'),
         },
         lists: {
             close_lists: $('#close_lists'),
@@ -22,7 +31,6 @@ function EchoesUi() {
     }
 
     this.attach_events();
-    this.show_window('echoes');
 }
 
 EchoesUi.prototype = Object.create(EchoesObject.prototype); // inherit EchoesObject
@@ -56,6 +64,14 @@ EchoesUi.prototype.attach_events = function() {
         self.show_window($(this).attr('windowname'));
         self.ui.buttons.channels.click();
     });
+    this.ui.lists.nicknames.on('click', 'li', function() {
+        var nick = $(this).attr('windowname');
+        self.add_window(nick);
+        self.show_window(nick);
+        self.ui.lists.close_lists.click();
+    });
+
+    this.show_window(this.ui.echoes.attr('windowname'));
 }
 
 EchoesUi.prototype.scroll_down = function() {
@@ -64,7 +80,7 @@ EchoesUi.prototype.scroll_down = function() {
 
 EchoesUi.prototype.echo = function(echo, where, and_echoes) {
     where = (typeof where == 'string' ? where : $(this.active_window()).attr('windowname'));
-    and_echoes = (and_echoes && where != 'echoes' ? true : false);
+    and_echoes = (and_echoes && where != this.ui.echoes.attr('windowname') ? true : false);
 
     var li =
         $('<li>')
@@ -72,7 +88,7 @@ EchoesUi.prototype.echo = function(echo, where, and_echoes) {
 
     this.get_window(where).append(li);
     if (and_echoes) {
-        li.clone().appendTo(this.get_window('echoes'));
+        li.clone().appendTo(this.get_window(this.ui.echoes.attr('windowname')));
     }
 
     this.scroll_down();
@@ -92,7 +108,7 @@ EchoesUi.prototype.active_window = function() {
 }
 
 EchoesUi.prototype.joined_channels = function() {
-    return this.ui.lists.channels.find('li:not([windowname="echoes"])');
+    return this.ui.lists.channels.find('li:not([windowname="' + this.ui.echoes.attr('windowname') + '"])');
 }
 EchoesUi.prototype.opened_windows = function() {
     return this.ui.wall.find('ul');
@@ -101,9 +117,15 @@ EchoesUi.prototype.opened_windows = function() {
 EchoesUi.prototype.remove_channel = function(chan) {
     this.ui.lists.channels.find('li[windowname="' + chan + '"]').remove();
 }
+EchoesUi.prototype.remove_nickname = function(nick) {
+    this.ui.lists.nickname.find('li[windowname="' + nick + '"]').remove();
+}
 
 EchoesUi.prototype.clear_channels = function() {
     this.ui.lists.channels.html('');
+}
+EchoesUi.prototype.clear_nicknames = function() {
+    this.ui.lists.nicknames.html('');
 }
 
 EchoesUi.prototype.add_channel = function(chan) {
@@ -120,6 +142,19 @@ EchoesUi.prototype.add_channel = function(chan) {
     this.add_window(chan);
 }
 
+EchoesUi.prototype.add_nickname = function(nick) {
+    if (this.ui.nicknames.find('li[windowname="' + nick + '"]').length > 0) {
+        return;
+    }
+
+    var nick_element =
+        $('<li>')
+            .attr('windowname', nick)
+            .text(nick)
+
+    this.ui.lists.nicknames.append(nick_element);
+}
+
 EchoesUi.prototype.add_window = function(name) {
     if (this.ui.wall.find('ul[windowname="' + name + '"]').length > 0) {
         return;
@@ -128,7 +163,10 @@ EchoesUi.prototype.add_window = function(name) {
     this.ui.wall.append(
         $('<ul>')
             .attr('windowname', name)
+            .css('display', 'none')
     );
+
+    this.echo('Say hi to ' + name, name)
 }
 EchoesUi.prototype.remove_window = function(name) {
     this.ui.wall.find('ul[windowname="' + name + '"]').remove();
@@ -138,14 +176,43 @@ EchoesUi.prototype.get_window = function(name) {
     return this.ui.wall.find('ul[windowname="' + name + '"]');
 }
 
+EchoesUi.prototype.set_window_state = function(state, on_window) { // encrypted, unencrypted, oneway
+    switch (state) {
+        case 'encrypted':
+        case 'oneway':
+            this.log('setting src to ' + this.assets.encrypt[state])
+            this.ui.buttons.encrypt.attr('src', this.assets.encrypt[state]).attr('alt', state);
+            this.get_window(on_window).attr('encryptionstate', state);
+        break;
+        default:
+            this.ui.buttons.encrypt.attr('src', this.assets.encrypt.unencrypted).attr('alt', 'unencrypted');
+            this.get_window(on_window).attr('encryptionstate', 'unencrypted');
+        break;
+    }
+
+}
+EchoesUi.prototype.get_window_state = function(on_window) {
+    var state = this.get_window(on_window).attr('encryptionstate');
+    return (state ? state : 'unencrypted');
+}
+
 EchoesUi.prototype.show_window = function(name) {
+    var self = this;
+
     this.ui.lists.channels.find('li').removeClass('theme_selected_window');
     this.ui.lists.nicknames.find('li').removeClass('theme_selected_window');
     this.ui.lists.channels.find('li[windowname="' + name + '"]').addClass('theme_selected_window');
     this.ui.lists.nicknames.find('li[windowname="' + name + '"]').addClass('theme_selected_window');
 
     this.ui.wall.find('ul:visible').hide();
-    this.ui.wall.find('ul[windowname="' + name + '"]').show();
+    this.ui.wall.find('ul[windowname="' + name + '"]').show(function() {
+        if (! $(this).attr('windowname').match(/^(\)\)\)|#.*)/gi)) {
+            self.set_window_state($(this).attr('encryptionstate'), $(this).attr('windowname'));
+            self.ui.buttons.encrypt.fadeIn('fast');
+        } else {
+            self.ui.buttons.encrypt.fadeOut('fast');
+        }
+    });
 
     this.scroll_down();
     this.ui.input.focus();
