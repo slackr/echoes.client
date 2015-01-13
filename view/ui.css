@@ -103,9 +103,11 @@ body {
 
 #nicknames {
     right: 0;
+    overflow-y: auto;
 }
 #channels {
     left: 0;
+    overflow-y: auto;
 }
 
 #close_lists, #me {
@@ -135,8 +137,10 @@ body {
     cursor: pointer;
     position: fixed;
     bottom: 0;
-    right: 0;
-    padding: 10px;
+    bottom: 0;
+    left: 0px;
+    padding: 5px;
+    padding-left: 11px;
 }
 #encrypt_img {
     display: none;
