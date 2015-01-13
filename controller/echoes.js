@@ -146,16 +146,17 @@ function keyx_import(data) {
 }
 
 function update_encrypt_state(for_window) {
-    var sent_decrypt_key = (typeof $keychain[for_window].keysent == 'undefined'
+    var sent_decrypt_key = (typeof $keychain[for_window] == 'undefined'
+                            || typeof $keychain[for_window].keysent == 'undefined'
                             || $keychain[for_window].keysent != true
                             ) ? false : true;
     var received_encrypt_key = (typeof $keychain[for_window] == 'undefined'
-                                || $keychain[for_window]['public_key'] == null) ? false : true;
+                                || $keychain[for_window].public_key == null) ? false : true;
 
     var state = 'unencrypted';
     if (received_encrypt_key && sent_decrypt_key) {
         state = 'encrypted';
-    } else if (! received_encrypt_key || sent_decrypt_key) {
+    } else if (received_encrypt_key && ! sent_decrypt_key) {
         state = 'oneway';
     }
 
@@ -165,7 +166,7 @@ function update_encrypt_state(for_window) {
 
 function send_encrypted_echo(nick, echo) {
     if (typeof $keychain[nick] == 'undefined'
-        || $keychain[nick]['public_key'] == null) {
+        || $keychain[nick].public_key == null) {
         $ui.error("You do not have an encryption key for " + nick + ". A key exchange is required.");
         return;
     }
@@ -361,13 +362,8 @@ function setup_callbacks() {
                 }
             break;
             case 'unencrypted':
-                execute_command(['/keyx',endpoint]);
-            break;
             case 'oneway':
-                var resent = confirm('Key already sent to ' + endpoint + '. Resend?');
-                if (resend) {
-                    execute_command(['/keyx',endpoint]);
-                }
+                execute_command(['/keyx', endpoint]);
             break;
         }
     });
