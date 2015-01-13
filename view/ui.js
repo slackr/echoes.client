@@ -195,8 +195,8 @@ EchoesUi.prototype.get_window_state = function(on_window) {
 }
 
 EchoesUi.prototype.update_encrypt_state = function(for_window) {
-    var sent_decrypt_key = (get_keychain_property(for_window, 'keysent') == true ? true : false);
-    var received_encrypt_key = (get_keychain_property(for_window, 'public_key') != null ? true : false);
+    var sent_decrypt_key = (this.get_keychain_property(for_window, 'keysent') == true ? true : false);
+    var received_encrypt_key = (this.get_keychain_property(for_window, 'public_key') != null ? true : false);
 
     var state = 'unencrypted';
     if (received_encrypt_key && sent_decrypt_key) {
@@ -207,6 +207,39 @@ EchoesUi.prototype.update_encrypt_state = function(for_window) {
 
     this.set_window_state(state, for_window);
     this.log('window ' + for_window + ' set to ' + state + ' s:' + sent_decrypt_key + ' r:' + received_encrypt_key);
+}
+
+
+EchoesUi.prototype.set_keychain_property = function(nick, prop) {
+    if (typeof $keychain[nick] == 'undefined') {
+        $keychain[nick] = {};
+        $ui.log('initialized keychain for ' + nick, 0);
+    }
+    
+    if (typeof prop.public_key != 'undefined') {
+        $keychain[nick]['public_key'] = prop.public_key;
+    }
+    if (typeof prop.keysent != 'undefined') {
+        $keychain[nick]['keysent'] = prop.keysent;
+    }
+
+    $ui.log('set prop ' + JSON.stringify(prop) + ' on keychain: ' + JSON.stringify($keychain[nick]), 0);
+}
+
+EchoesUi.prototype.get_keychain_property = function(nick, prop) {
+    prop = prop || 'public_key';
+
+    if (typeof $keychain[nick] == 'undefined') {
+        this.set_keychain_property(nick, {});
+        return null;
+    }
+
+    if (typeof $keychain[nick][prop] == 'undefined') {
+        return null;
+    }
+
+    $ui.log('get prop ' + prop + ' from keychain: ' + JSON.stringify($keychain[nick]), 0);
+    return $keychain[nick][prop];
 }
 
 EchoesUi.prototype.show_window = function(name) {

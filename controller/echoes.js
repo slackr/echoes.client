@@ -158,7 +158,7 @@ function keyx_import(data) {
     var c = new EchoesCrypto();
 
     c.import_jwk_key('encrypt', data.pubkey).then(function() {
-        set_keychain_property(nick, { public_key: c.keychain.encrypt.imported.public_key });
+        $ui.set_keychain_property(nick, { public_key: c.keychain.encrypt.imported.public_key });
         $ui.update_encrypt_state(nick);
 
         $ui.status('Imported encryption key from ' + nick);
@@ -167,7 +167,7 @@ function keyx_import(data) {
 }
 
 function send_encrypted_echo(nick, echo) {
-    if (get_keychain_property(nick, 'public_key') == null) {
+    if ($ui.get_keychain_property(nick, 'public_key') == null) {
         $ui.error("You do not have an encryption key for " + nick + ". A key exchange is required.");
         return;
     }
@@ -207,37 +207,6 @@ function decrypt_eecho(nick, echo) {
     });
 }
 
-function set_keychain_property(nick, prop) {
-    if (typeof $keychain[nick] == 'undefined') {
-        $keychain[nick] = {};
-        $ui.log('initialized keychain for ' + nick, 0);
-    } else {
-        if (typeof prop.public_key != 'undefined') {
-            $keychain[nick]['public_key'] = prop.public_key;
-        }
-        if (typeof prop.keysent != 'undefined') {
-            $keychain[nick]['keysent'] = prop.keysent;
-        }
-
-        $ui.log('set prop ' + JSON.stringify(prop) + ' on keychain: ' + JSON.stringify($keychain[nick]), 0);
-    }
-}
-
-function get_keychain_property(nick, prop) {
-    prop = prop || 'public_key';
-
-    if (typeof $keychain[nick] == 'undefined') {
-        set_keychain_property(nick, {});
-        return null;
-    }
-
-    if (typeof $keychain[nick][prop] == 'undefined') {
-        return null;
-    }
-
-    $ui.log('get prop ' + prop + ' from keychain: ' + JSON.stringify($keychain[nick]), 0);
-    return $keychain[nick][prop];
-}
 function init_socket() {
     var socket_query = encodeURI('session_id=' + $session_id + '&nickname=' + $me);
 
@@ -315,6 +284,7 @@ function setup_callbacks() {
     });
     socket.on('*disconnect', function(who) {
         $ui.remove_nickname(who.nickname);
+        keyx_off(who.nickname, false);
         $ui.status(who.nickname + ' disconnected!', who.nickname, true);
     });
 
@@ -346,7 +316,7 @@ function setup_callbacks() {
         keyx_off(data.from, false); // do not emit another !keyx_off
     });
     socket.on('*keyx_sent', function(data){
-        set_keychain_property(data.to, { keysent: true });
+        $ui.set_keychain_property(data.to, { keysent: true });
 
         $ui.update_encrypt_state(data.to);
 
