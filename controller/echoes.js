@@ -219,6 +219,9 @@ function init_socket() {
     socket = io(AppConfig.WS_SERVER, {
         query: socket_query,
         forceNew: true,
+        //multiplex: false,
+        transports: AppConfig.ALLOWED_TRANSPORTS,
+        autoConnect: true,
     });
 
     setup_callbacks();
@@ -371,6 +374,10 @@ function setup_callbacks() {
         $ui.status('Connected!', null, true);
     });
     socket.on('disconnect', function() {
+        $keychain = {}; // bye bye nick keys
+        $ui.log('keychain wiped', 0);
+        $ui.update_encrypt_state($ui.active_window().attr('windowname'));
+
         $ui.status('Disconnected :(', null, true);
     });
 

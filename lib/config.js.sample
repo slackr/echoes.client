@@ -2,4 +2,11 @@ var AppConfig = {
     LOG_LEVEL: 3,
     CONSOLE_LOG: false,
     WS_SERVER: 'wss://io.echoes.im/',
+
+    ALLOWED_TRANSPORTS: [
+        'websocket',
+        //'htmlfile',
+        //'xhr-polling',
+        //'jsonp-polling',
+    ],
 }
