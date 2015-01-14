@@ -61,7 +61,7 @@ function send_echo() {
         if ($ui.active_window().attr('encryptionstate') == 'encrypted') {
             execute_command(['/eecho', to, echo]);
         } else {
-            socket.emit('/echo', { echo: echo, to: to });
+            execute_command(['/echo', to, echo]);
         }
     }
 
@@ -80,17 +80,24 @@ function execute_command(params) {
         case '/pm':
         case '/msg':
         case '/private':
+        case '/win':
+        case '/window':
         case '/query':
             var nick = params[0];
-            $ui.add_nickname(nick);
-            $ui.ui.lists.nicknames.find('li[windowname="' + nick + '"]').click();
+            socket.emit('/pm', nick);
+        break;
+        case '/echo':
+            var chan = params[0];
+            var echo = params[1];
+
+            $ui.echo($me + ' ))) ' + echo);
+            socket.emit('/echo', { echo: echo, to: chan });
         break;
         case '/eecho':
             var nick = params[0];
-            params.shift();
-            var eecho_plaintext = params.join(' ');
+            var plaintext = params[1];
 
-            send_encrypted_echo(nick, eecho_plaintext);
+            send_encrypted_echo(nick, plaintext);
         break;
         case '/keyx':
             keyx_send_key(params[0]);
@@ -194,16 +201,12 @@ function decrypt_eecho(nick, echo) {
         $ui.error("Unable to decrypt echo from " + nick + ". No decryption key available.");
         return;
     }
-    var and_echoes = false;
-
     var decoded_echo = atob(echo);
     var c = new EchoesCrypto();
 
-    if ($ui.get_window(nick).length == 0) {
-        and_echoes = true;
-    }
+    $ui.add_nickname(nick);
     c.decrypt(decoded_echo, $ec.keychain.encrypt.private_key).then(function() {
-        $ui.echo(nick + ' ))) [encrypted] ' + c.decrypted_data, nick, and_echoes);
+        $ui.echo(nick + ' ))) [encrypted] ' + c.decrypted_data, nick, false);
     });
 }
 
@@ -229,6 +232,12 @@ function setup_callbacks() {
         $ui.status('Hi ' + $me + ', say something or /join a channel', $ui.ui.echoes.attr('windowname'));
 
         execute_command(['/who']);
+    });
+
+    socket.on('*pm', function(nick) {
+        $ui.add_nickname(nick);
+        $ui.ui.lists.nicknames.find('li[windowname="' + nick + '"]')
+            .click();
     });
 
     socket.on('*join', function(join) {
@@ -296,10 +305,9 @@ function setup_callbacks() {
             break;
 
             case 'pm':
-                if ($me != echo.from) {
-                    $ui.add_window(echo.from);
-                    $ui.echo(echo.from + ' ))) ' + echo.echo, echo.from);
-                } // else passthru
+                $ui.add_window(echo.from);
+                $ui.echo(echo.from + ' ))) ' + echo.echo, echo.from);
+            break;
             case 'all':
             case 'channel':
                 $ui.echo(echo.from + ' ))) ' + echo.echo, echo.to);
