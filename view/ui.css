@@ -4,6 +4,20 @@
     box-sizing: border-box;
 }
 
+/**
+ * mobile friendly
+ */
+input {
+    max-width:100%
+}
+li {
+    word-wrap: break-word;
+}
+@viewport{
+    zoom: 1.0;
+    /*width: device-width;*/
+}
+
 body {
     font-size: 15px;
     height: 100%;
