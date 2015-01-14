@@ -147,9 +147,8 @@ body {
     cursor: pointer;
     position: fixed;
     bottom: 0;
-    bottom: 0;
     left: 0px;
-    padding: 5px;
+    padding: 6px;
     padding-left: 11px;
 }
 #encrypt_img {
