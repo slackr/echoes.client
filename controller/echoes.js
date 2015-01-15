@@ -317,7 +317,7 @@ function setup_callbacks() {
             break;
 
             case 'pm':
-                $ui.add_window(echo.from);
+                $ui.add_window(echo.from, 'nickname');
                 $ui.echo(echo.from + ' ))) ' + echo.echo, echo.from);
             break;
             case 'all':

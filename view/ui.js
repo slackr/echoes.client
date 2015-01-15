@@ -16,6 +16,7 @@ function EchoesUi() {
         me_input: $('#me_input'),
         me: $('#me'),
         form: $('form'),
+        current_window_name: $('#current_window_name'),
         buttons: {
             nicknames: $('#menu_nicknames'),
             channels: $('#menu_channels'),
@@ -64,7 +65,7 @@ EchoesUi.prototype.attach_events = function() {
     });
     this.ui.lists.nicknames.on('click', 'li', function() {
         var nick = $(this).attr('windowname');
-        self.add_window(nick);
+        self.add_window(nick, 'nickname');
         self.show_window(nick);
         self.ui.lists.close_lists.click();
     });
@@ -137,7 +138,7 @@ EchoesUi.prototype.add_channel = function(chan) {
             .text(chan)
 
     this.ui.lists.channels.append(chan_element);
-    this.add_window(chan);
+    this.add_window(chan, 'channel');
 }
 
 EchoesUi.prototype.add_nickname = function(nick) {
@@ -153,7 +154,9 @@ EchoesUi.prototype.add_nickname = function(nick) {
     this.ui.lists.nicknames.append(nick_element);
 }
 
-EchoesUi.prototype.add_window = function(name) {
+EchoesUi.prototype.add_window = function(name, type) {
+    type = type || 'channel';
+
     if (this.ui.wall.find('ul[windowname="' + name + '"]').length > 0) {
         return;
     }
@@ -161,10 +164,13 @@ EchoesUi.prototype.add_window = function(name) {
     this.ui.wall.append(
         $('<ul>')
             .attr('windowname', name)
+            .attr('windowtype', type)
             .css('display', 'none')
     );
 
-    this.echo('Say hi to ' + name, name)
+    if (type == 'nickname') {
+        this.echo('Say hi to ' + name, name);
+    }
 }
 EchoesUi.prototype.remove_window = function(name) {
     this.ui.wall.find('ul[windowname="' + name + '"]').remove();
@@ -215,7 +221,7 @@ EchoesUi.prototype.set_keychain_property = function(nick, prop) {
         $keychain[nick] = {};
         $ui.log('initialized keychain for ' + nick, 0);
     }
-    
+
     if (typeof prop.public_key != 'undefined') {
         $keychain[nick]['public_key'] = prop.public_key;
     }
@@ -251,12 +257,21 @@ EchoesUi.prototype.show_window = function(name) {
     this.ui.lists.nicknames.find('li[windowname="' + name + '"]').addClass('theme_selected_window');
 
     this.ui.wall.find('ul:visible').hide();
+    self.ui.current_window_name.fadeOut('fast');
+
     this.ui.wall.find('ul[windowname="' + name + '"]').show(function() {
-        if (! $(this).attr('windowname').match(/^(\)\)\)|#.*)/gi)) {
+
+        self.ui.current_window_name.text(name);
+
+        if ($(this).attr('windowtype') == 'nickname') {
             self.toggle_encrypt_icon(true);
+            self.ui.current_window_name.css('float', 'right');
         } else {
             self.toggle_encrypt_icon(false);
+            self.ui.current_window_name.css('float', 'left');
         }
+
+        self.ui.current_window_name.fadeIn('fast');
     });
 
     this.scroll_down();
