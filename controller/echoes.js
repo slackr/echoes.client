@@ -107,7 +107,7 @@ function execute_command(params) {
         break;
         default:
             socket.emit(command, params);
-            $ui.log('sent unhandled command to server: ' + command + ' ' + params.join(' '));
+            $ui.log('passed unhandled command to server: ' + command + ' ' + params.join(' '), 1);
         break
     }
 }
@@ -122,10 +122,13 @@ function join_channels() {
 function keyx_new_key(endpoint) {
     $ui.status('Generting new encryption key...');
     $ec.generate_keypair('encrypt').then(function() {
-        $ui.log('key generated, exporting...');
+        $ui.log('key generated, exporting...', 0);
         $ec.export_public_key('encrypt').then(function() {
-            $ui.log('key exported.');
-            keyx_send_key(endpoint);
+            $ui.log('key exported successfully', 0);
+            if (typeof endpoint != 'undefined') {
+                $ui.log('sending key to endpoint: ' + endpoint, 0);
+                keyx_send_key(endpoint);
+            }
         })
     }).catch(function(e) {
         $ui.error('failed to generate key: ' + e.toString());
@@ -135,12 +138,12 @@ function keyx_new_key(endpoint) {
 function keyx_send_key(endpoint) {
     if (typeof $ec == 'undefined'
         || $ec.jwk_exported_key == null) {
-        $ui.log('generating new key...', 1);
+        $ui.log('generating new key...', 0);
         keyx_new_key(endpoint);
         return;
     }
 
-    $ui.log('found existing key, broadcasting...', 1);
+    $ui.log('found existing key, broadcasting...', 0);
     socket.emit('!keyx', {
         to: endpoint,
         pubkey: $ec.jwk_exported_key
@@ -169,7 +172,7 @@ function keyx_import(data) {
         $ui.update_encrypt_state(nick);
 
         $ui.status('Imported encryption key from ' + nick);
-        $ui.log('key import successful from: ' + nick);
+        $ui.log('key import successful from: ' + nick, 0);
     });
 }
 
@@ -186,7 +189,7 @@ function send_encrypted_echo(nick, echo) {
         socket.emit('/echo', {
             type: 'encrypted',
             to: nick,
-            echo: btoa(c.encrypted_data), // we could send object, but not all clients are written in js
+            echo: c.encrypted_segments, // an array of base64 encoded 240b segments
         });
 
         if ($ui.get_window(nick).length == 0) {
@@ -195,18 +198,24 @@ function send_encrypted_echo(nick, echo) {
         $ui.echo($me + ' ))) [encrypted] ' + echo, nick, and_echoes);
     });
 }
-function decrypt_eecho(nick, echo) {
+function decrypt_eecho(nick, echo) { // echo is an array of b64 encoded 240byte segments
     if (typeof $ec == 'undefined'
         || $ec.keychain.encrypt.private_key == null) {
         $ui.error("Unable to decrypt echo from " + nick + ". No decryption key available.");
         return;
     }
-    var decoded_echo = atob(echo);
+    if (typeof echo != 'object'
+        || echo.length == 0) {
+        $ui.log('invalid encrypted echo from ' + nick + ': ' + typeof echo, 3);
+        $ui.error("Could not decrypted echo from " + nick + ". It appears invalid.");
+        return;
+    }
+
     var c = new EchoesCrypto();
 
     $ui.add_nickname(nick);
-    c.decrypt(decoded_echo, $ec.keychain.encrypt.private_key).then(function() {
-        $ui.echo(nick + ' ))) [encrypted] ' + c.decrypted_data, nick, false);
+    c.decrypt(echo, $ec.keychain.encrypt.private_key).then(function() {
+        $ui.echo(nick + ' ))) [encrypted] ' + c.decrypted_text, nick, false);
     });
 }
 
@@ -336,7 +345,7 @@ function setup_callbacks() {
     });
 
     socket.on('*eecho_sent', function(data){
-        $ui.log('eecho sent: ' + data.to + ': ' + JSON.stringify(data));
+        $ui.log('eecho sent: ' + data.to + ': ' + JSON.stringify(data), 0);
     });
 
     socket.on('*error', function(message){
@@ -375,7 +384,7 @@ function setup_callbacks() {
     });
     socket.on('disconnect', function() {
         $keychain = {}; // bye bye nick keys
-        $ui.log('keychain wiped', 0);
+        $ui.log('session keychain wiped on disconnect', 1);
         $ui.update_encrypt_state($ui.active_window().attr('windowname'));
 
         $ui.status('Disconnected :(', null, true);
@@ -384,7 +393,7 @@ function setup_callbacks() {
     $ui.ui.buttons.encrypt.click(function() {
         var endpoint = $ui.active_window().attr('windowname');
         var current_state = $ui.get_window_state(endpoint);
-        $ui.log('window current state: ' + current_state);
+        $ui.log('window current encryption state: ' + current_state, 0);
         switch (current_state) {
             case 'encrypted':
                 var turnoff = confirm('Turn off encryption for ' + endpoint + '?');
