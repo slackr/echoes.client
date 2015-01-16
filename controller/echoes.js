@@ -43,6 +43,24 @@ $(document).ready(function() {
             send_echo();
         }
     });
+
+    $ui.ui.buttons.encrypt.click(function() {
+        var endpoint = $ui.active_window().attr('windowname');
+        var current_state = $ui.get_window_state(endpoint);
+        $ui.log('window current encryption state: ' + current_state, 0);
+        switch (current_state) {
+            case 'encrypted':
+                var turnoff = confirm('Turn off encryption for ' + endpoint + '?');
+                if (turnoff) {
+                    execute_command(['/keyx_off', endpoint]);
+                }
+            break;
+            case 'unencrypted':
+            case 'oneway':
+                execute_command(['/keyx', endpoint]);
+            break;
+        }
+    });
 });
 
 function send_echo() {
@@ -138,12 +156,12 @@ function keyx_new_key(endpoint) {
 function keyx_send_key(endpoint) {
     if (typeof $ec == 'undefined'
         || $ec.jwk_exported_key == null) {
-        $ui.log('generating new key...', 0);
+        $ui.log('generating new session keypair...', 0);
         keyx_new_key(endpoint);
         return;
     }
 
-    $ui.log('found existing key, broadcasting...', 0);
+    $ui.log('found existing keypair, broadcasting...', 0);
     socket.emit('!keyx', {
         to: endpoint,
         pubkey: $ec.jwk_exported_key
@@ -171,14 +189,14 @@ function keyx_import(data) {
         $ui.set_keychain_property(nick, { public_key: c.keychain.encrypt.imported.public_key });
         $ui.update_encrypt_state(nick);
 
-        $ui.status('Imported encryption key from ' + nick);
-        $ui.log('key import successful from: ' + nick, 0);
+        $ui.status('Imported public key from ' + nick);
+        $ui.log('pubkey import successful from: ' + nick, 0);
     });
 }
 
 function send_encrypted_echo(nick, echo) {
     if ($ui.get_keychain_property(nick, 'public_key') == null) {
-        $ui.error("You do not have an encryption key for " + nick + ". A key exchange is required.");
+        $ui.error("You do not have a public key for " + nick + ". Initiate a key exchange first.");
         return;
     }
 
@@ -228,7 +246,7 @@ function init_socket() {
     socket = io(AppConfig.WS_SERVER, {
         query: socket_query,
         forceNew: true,
-        //multiplex: false,
+        multiplex: false,
         transports: AppConfig.ALLOWED_TRANSPORTS,
         autoConnect: true,
     });
@@ -340,7 +358,7 @@ function setup_callbacks() {
 
         $ui.update_encrypt_state(data.to);
 
-        $ui.status('Encryption key sent to ' + data.to);
+        $ui.status('Public key sent to ' + data.to);
         $ui.log('keyx sent to: ' + data.to + ': ' + JSON.stringify(data), 0);
     });
 
@@ -352,10 +370,10 @@ function setup_callbacks() {
         $ui.error(message, null, true);
         $ui.log(message, 3);
     });
-
-    socket.on('error', function(e) {
+    socket.on('*fatal', function(e) {
+        $ui.log('fatal! ' + e, 3);
         switch (e) {
-            case 'invalid_nick':
+            case 'nick_invalid':
                 $me = null;
                 $ui.get_me('Bad nickname :( try again');
             break;
@@ -369,17 +387,20 @@ function setup_callbacks() {
         }
     });
 
+    socket.on('error', function(e) {
+        $ui.error(e);
+    });
     socket.on('connect_error', function() {
-        console.log('connect error');
+        $ui.log('connect error', 0);
     });
     socket.on('reconnect_error', function() {
-        console.log('reconnect error');
+        $ui.log('reconnect error', 0);
     });
 
     socket.on('reconnect', function() {
         join_channels();
     });
-    socket.on('connect', function() {
+    socket.once('connect', function() {
         $ui.status('Connected!', null, true);
     });
     socket.on('disconnect', function() {
@@ -388,23 +409,5 @@ function setup_callbacks() {
         $ui.update_encrypt_state($ui.active_window().attr('windowname'));
 
         $ui.status('Disconnected :(', null, true);
-    });
-
-    $ui.ui.buttons.encrypt.click(function() {
-        var endpoint = $ui.active_window().attr('windowname');
-        var current_state = $ui.get_window_state(endpoint);
-        $ui.log('window current encryption state: ' + current_state, 0);
-        switch (current_state) {
-            case 'encrypted':
-                var turnoff = confirm('Turn off encryption for ' + endpoint + '?');
-                if (turnoff) {
-                    execute_command(['/keyx_off', endpoint]);
-                }
-            break;
-            case 'unencrypted':
-            case 'oneway':
-                execute_command(['/keyx', endpoint]);
-            break;
-        }
     });
 }
