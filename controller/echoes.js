@@ -142,12 +142,18 @@ function keyx_new_key(endpoint) {
     $ec.generate_keypair('encrypt').then(function() {
         $ui.log('keypair generated, exporting...', 0);
         $ec.export_public_key('encrypt').then(function() {
-            $ui.log('pubkey exported successfully', 0);
-            if (typeof endpoint != 'undefined') {
-                $ui.log('sending pubkey to endpoint: ' + endpoint, 0);
-                keyx_send_key(endpoint);
-            }
-        })
+            $ui.log('public_key exported successfully', 0);
+
+            $ec.hash($ec.jwk_exported_key).then(function() {
+                $ec.jwk_exported_key_hash = $ec.resulting_hash;
+                if (typeof endpoint != 'undefined') {
+                    $ui.log('sending public_key to endpoint: ' + endpoint, 0);
+                    keyx_send_key(endpoint);
+                }
+            })
+        }).catch(function(e) {
+            $ui.error('failed to export key: ' + e.toString());
+        });
     }).catch(function(e) {
         $ui.error('failed to generate keypair: ' + e.toString());
     });
@@ -186,11 +192,18 @@ function keyx_import(data) {
     var c = new EchoesCrypto();
 
     c.import_jwk_key('encrypt', data.pubkey).then(function() {
-        $ui.set_keychain_property(nick, { public_key: c.keychain.encrypt.imported.public_key });
-        $ui.update_encrypt_state(nick);
+        return c.hash(data.pubkey).then(function() {
+            $ui.set_keychain_property(nick, {
+                public_key: c.keychain.encrypt.imported.public_key,
+                hash: c.resulting_hash.match(/.{1,8}/g).join(' '),
+            });
+            $ui.update_encrypt_state(nick);
 
-        $ui.status('Imported public key from ' + nick);
-        $ui.log('pubkey import successful from: ' + nick, 0);
+            $ui.status('Imported public key from ' + nick + ' (' + $keychain[nick].hash + ')');
+            $ui.log('pubkey import successful from: ' + nick + ' (' + hash + ')', 0);
+        }).catch(function(e) {
+            console.log(e);
+        })
     });
 }
 
@@ -358,7 +371,7 @@ function setup_callbacks() {
 
         $ui.update_encrypt_state(data.to);
 
-        $ui.status('Public key sent to ' + data.to);
+        $ui.status('Public key sent to ' + data.to + ' (' + $ec.jwk_exported_key_hash.match(/.{1,8}/g).join(' ') + ')');
         $ui.log('keyx sent to: ' + data.to + ': ' + JSON.stringify(data), 0);
     });
 

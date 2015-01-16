@@ -222,6 +222,9 @@ EchoesUi.prototype.set_keychain_property = function(nick, prop) {
         $ui.log('initialized keychain for ' + nick, 0);
     }
 
+    if (typeof prop.hash != 'undefined') {
+        $keychain[nick]['hash'] = prop.hash;
+    }
     if (typeof prop.public_key != 'undefined') {
         $keychain[nick]['public_key'] = prop.public_key;
     }
