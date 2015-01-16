@@ -142,10 +142,11 @@ body {
 }
 #me_wrapper {
     position: absolute;
-    top: 50%;
+    top: 40%;
     left: 50%;
     margin-left: -200px;
     width: 400px;
+    text-align: center;
 }
 
 #encrypt {
