@@ -138,18 +138,18 @@ function join_channels() {
 }
 
 function keyx_new_key(endpoint) {
-    $ui.status('Generting new encryption key...');
+    $ui.status('Generting new session keys...');
     $ec.generate_keypair('encrypt').then(function() {
-        $ui.log('key generated, exporting...', 0);
+        $ui.log('keypair generated, exporting...', 0);
         $ec.export_public_key('encrypt').then(function() {
-            $ui.log('key exported successfully', 0);
+            $ui.log('pubkey exported successfully', 0);
             if (typeof endpoint != 'undefined') {
-                $ui.log('sending key to endpoint: ' + endpoint, 0);
+                $ui.log('sending pubkey to endpoint: ' + endpoint, 0);
                 keyx_send_key(endpoint);
             }
         })
     }).catch(function(e) {
-        $ui.error('failed to generate key: ' + e.toString());
+        $ui.error('failed to generate keypair: ' + e.toString());
     });
 }
 
