@@ -120,7 +120,7 @@ body {
     overflow-y: auto;
 }
 
-#close_lists, #me {
+#close_lists {
     position: fixed;
     height: 100%;
     width: 100%;
@@ -132,8 +132,12 @@ body {
 }
 
 #me {
+    position: fixed;
+    height: 100%;
+    width: 100%;
     z-index: 200;
     opacity: 1;
+    display: block;
 }
 #me_wrapper {
     position: absolute;

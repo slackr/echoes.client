@@ -77,17 +77,26 @@ EchoesUi.prototype.scroll_down = function() {
     this.ui.wall.scrollTop(this.ui.wall.prop("scrollHeight"));
 };
 
-EchoesUi.prototype.echo = function(echo, where, and_echoes) {
+EchoesUi.prototype.echo = function(echo, where, and_echoes, add_class) {
+    add_class = add_class || 'theme_bg_white theme_color_dark theme_bold theme_shadow_light';
     where = (typeof where == 'string' ? where : $(this.active_window()).attr('windowname'));
     and_echoes = (and_echoes && where != this.ui.echoes.attr('windowname') ? true : false);
 
     var li =
         $('<li>')
+            .addClass(add_class)
+            .hide()
             .text(echo);
 
-    this.get_window(where).append(li);
+    li.appendTo(this.get_window(where))
+        .fadeIn('fast');
+
     if (and_echoes) {
-        li.clone().appendTo(this.get_window(this.ui.echoes.attr('windowname')));
+        li
+            .clone()
+            .hide()
+            .appendTo(this.get_window(this.ui.echoes.attr('windowname')))
+            .fadeIn('fast');
     }
 
     this.scroll_down();
@@ -95,11 +104,11 @@ EchoesUi.prototype.echo = function(echo, where, and_echoes) {
 };
 
 EchoesUi.prototype.status = function(status, where, and_echoes) {
-    this.echo('* ' + status, where, and_echoes);
+    this.echo('* ' + status, where, and_echoes, ' ');
 };
 
 EchoesUi.prototype.error = function(error, where, and_echoes) {
-    this.status('ERROR: ' + error, where, and_echoes);
+    this.echo(error, where, and_echoes, 'theme_error');
 };
 
 EchoesUi.prototype.active_window = function() {
@@ -169,7 +178,7 @@ EchoesUi.prototype.add_window = function(name, type) {
     );
 
     if (type == 'nickname') {
-        this.echo('Say hi to ' + name, name);
+        this.status('Say hi to ' + name, name);
     }
 }
 EchoesUi.prototype.remove_window = function(name) {
