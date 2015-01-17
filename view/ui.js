@@ -74,7 +74,8 @@ EchoesUi.prototype.attach_events = function() {
 }
 
 EchoesUi.prototype.scroll_down = function() {
-    this.ui.wall.scrollTop(this.ui.wall.prop("scrollHeight"));
+    var win = this.active_window();
+    win.scrollTop(win.prop("scrollHeight"));
 };
 
 EchoesUi.prototype.echo = function(echo, where, and_echoes, add_class) {
@@ -288,11 +289,10 @@ EchoesUi.prototype.show_window = function(name) {
         }
 
         self.ui.current_window_name.fadeIn('fast');
+
+        self.scroll_down();
+        self.ui.input.focus();
     });
-
-    this.scroll_down();
-    this.ui.input.focus();
-
 }
 
 EchoesUi.prototype.get_me = function(message) {
