@@ -3,6 +3,7 @@ var $ec = null;
 var $ui = null;
 var $session_id = null;
 
+var $last_error = null;
 var $keychain = {};
 var $keychain_pending = {};
 var socket = null;
@@ -37,7 +38,7 @@ $(document).ready(function() {
             }
 
             if (! socket.connected) {
-                $ui.status('Not connected!');
+                $ui.error('Not connected :(');
                 return;
             }
             send_echo();
@@ -152,10 +153,10 @@ function keyx_new_key(endpoint) {
                 }
             })
         }).catch(function(e) {
-            $ui.error('failed to export key: ' + e.toString());
+            $ui.error('Failed to export key: ' + e.toString());
         });
     }).catch(function(e) {
-        $ui.error('failed to generate keypair: ' + e.toString());
+        $ui.error('Failed to generate keypair: ' + e.toString());
     });
 }
 
@@ -197,13 +198,22 @@ function keyx_import(data) {
                 public_key: c.keychain.encrypt.imported.public_key,
                 hash: c.resulting_hash.match(/.{1,8}/g).join(' '),
             });
-            $ui.update_encrypt_state(nick);
 
             $ui.status('Imported public key from ' + nick + ' (' + $keychain[nick].hash + ')');
-            $ui.log('pubkey import successful from: ' + nick + ' (' + hash + ')', 0);
+            $ui.log('pubkey import successful from: ' + nick + ' (' + $keychain[nick].hash + ')', 0);
         }).catch(function(e) {
-            console.log(e);
+            delete $keychain[nick];
+            $ui.update_encrypt_state(nick);
+
+            $ui.error({ error: 'Failed to import key from ' + nick, debug: e.toString() });
+            $ui.log('hash: ' + e.toString(), 3);
         })
+    }).catch(function(e) {
+        delete $keychain[nick];
+        $ui.update_encrypt_state(nick);
+
+        $ui.error({ error: 'Failed to import key from ' + nick, debug: e.toString() });
+        $ui.log('import key: ' + e.toString(), 3);
     });
 }
 
@@ -227,6 +237,8 @@ function send_encrypted_echo(nick, echo) {
             and_echoes = true;
         }
         $ui.echo($me + ' ))) [encrypted] ' + echo, nick, and_echoes);
+    }).catch(function(e) {
+        $ui.error({ error: 'Encrypt operation failed on echo to ' + nick, debug: e.toString() });
     });
 }
 function decrypt_eecho(nick, echo) { // echo is an array of b64 encoded 240byte segments
@@ -247,6 +259,8 @@ function decrypt_eecho(nick, echo) { // echo is an array of b64 encoded 240byte 
     $ui.add_nickname(nick);
     c.decrypt(echo, $ec.keychain.encrypt.private_key).then(function() {
         $ui.echo(nick + ' ))) [encrypted] ' + c.decrypted_text, nick, false);
+    }).catch(function(e) {
+        $ui.error({ error: 'Decrypt operation fail on echo from ' + nick, debug: e.toString() });
     });
 }
 
@@ -403,17 +417,30 @@ function setup_callbacks() {
     socket.on('error', function(e) {
         $ui.error(e);
     });
-    socket.on('connect_error', function() {
-        $ui.log('connect error', 0);
+    socket.on('connect_error', function(e) {
+        $ui.log('connect error: ' + e, 3);
+        if (e.toString() != $last_error) {
+            $ui.error({ error: 'Connection failed :( ', debug: e });
+            $last_error = e.toString();
+        }
     });
-    socket.on('reconnect_error', function() {
-        $ui.log('reconnect error', 0);
+    socket.on('connect_timeout', function(e) {
+        $ui.log('connect timeout: ' + e, 3);
+        if (e.toString() != $last_error) {
+            $ui.error({ error: 'Connection failed :( ', debug: e });
+            $last_error = e.toString();
+        }
+    });
+    socket.on('reconnect_error', function(e) {
+        $ui.log('reconnect error ' + e, 3);
     });
 
     socket.on('reconnect', function() {
+        $last_error = null;
         join_channels();
     });
     socket.once('connect', function() {
+        $last_error = null;
         $ui.status('Connected!', null, true);
     });
     socket.on('disconnect', function() {

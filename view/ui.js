@@ -94,9 +94,8 @@ EchoesUi.prototype.echo = function(echo, where, and_echoes, add_class) {
     if (and_echoes) {
         li
             .clone()
-            .hide()
-            .appendTo(this.get_window(this.ui.echoes.attr('windowname')))
-            .fadeIn('fast');
+            .css('opacity', 1) // wtf is setting the opacity to 0?
+            .appendTo(this.get_window(this.ui.echoes.attr('windowname')));
     }
 
     this.scroll_down();
@@ -108,7 +107,11 @@ EchoesUi.prototype.status = function(status, where, and_echoes) {
 };
 
 EchoesUi.prototype.error = function(error, where, and_echoes) {
-    this.echo(error, where, and_echoes, 'theme_error');
+    var error_out = error;
+    if (typeof error == 'object') {
+        error_out = error.error + (AppConfig.LOG_LEVEL == 0 ? ' (' + error.debug + ')' : '');
+    }
+    this.echo(error_out, where, and_echoes, 'theme_error');
 };
 
 EchoesUi.prototype.active_window = function() {
@@ -228,7 +231,7 @@ EchoesUi.prototype.update_encrypt_state = function(for_window) {
 EchoesUi.prototype.set_keychain_property = function(nick, prop) {
     if (typeof $keychain[nick] == 'undefined') {
         $keychain[nick] = {};
-        $ui.log('initialized keychain for ' + nick, 0);
+        this.log('initialized keychain for ' + nick, 0);
     }
 
     if (typeof prop.hash != 'undefined') {
@@ -241,7 +244,8 @@ EchoesUi.prototype.set_keychain_property = function(nick, prop) {
         $keychain[nick]['keysent'] = prop.keysent;
     }
 
-    $ui.log('set prop ' + JSON.stringify(prop) + ' on keychain: ' + JSON.stringify($keychain[nick]), 0);
+    this.update_encrypt_state(nick);
+    this.log('set prop ' + JSON.stringify(prop) + ' on keychain: ' + JSON.stringify($keychain[nick]), 0);
 }
 
 EchoesUi.prototype.get_keychain_property = function(nick, prop) {
@@ -256,7 +260,7 @@ EchoesUi.prototype.get_keychain_property = function(nick, prop) {
         return null;
     }
 
-    $ui.log('get prop ' + prop + ' from keychain: ' + JSON.stringify($keychain[nick]), 0);
+    this.log('get prop ' + prop + ' from keychain: ' + JSON.stringify($keychain[nick]), 0);
     return $keychain[nick][prop];
 }
 
