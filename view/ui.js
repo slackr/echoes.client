@@ -74,7 +74,7 @@ EchoesUi.prototype.attach_events = function() {
 }
 
 EchoesUi.prototype.scroll_down = function() {
-    var win = this.active_window();
+    var win = this.ui.wall;
     win.scrollTop(win.prop("scrollHeight"));
 };
 
