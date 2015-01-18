@@ -140,18 +140,22 @@ function join_channels() {
 
 function keyx_new_key(endpoint) {
     $ui.status('Generting new session keys...');
-    $ec.generate_keypair('encrypt').then(function() {
+    $ui.log('generating new session keypair...', 0);
+
+    $ec.generate_key('encrypt').then(function() {
         $ui.log('keypair generated, exporting...', 0);
-        $ec.export_public_key('encrypt').then(function() {
+        return $ec.export_key('encrypt_public').then(function() {
             $ui.log('public_key exported successfully', 0);
 
-            $ec.hash($ec.jwk_exported_key).then(function() {
-                $ec.jwk_exported_key_hash = $ec.resulting_hash;
+            return $ec.hash($ec.keychain.encrypt.exported.public_key).then(function() {
+                $ec.keychain.encrypt.exported.hash = $ec.resulting_hash.match(/.{1,8}/g).join(' ');
                 if (typeof endpoint != 'undefined') {
                     $ui.log('sending public_key to endpoint: ' + endpoint, 0);
                     keyx_send_key(endpoint);
                 }
-            })
+            }).catch(function(e) {
+                $ui.error('Failed to hash exported key: ' + e.toString());
+            });
         }).catch(function(e) {
             $ui.error('Failed to export key: ' + e.toString());
         });
@@ -162,8 +166,7 @@ function keyx_new_key(endpoint) {
 
 function keyx_send_key(endpoint) {
     if (typeof $ec == 'undefined'
-        || $ec.jwk_exported_key == null) {
-        $ui.log('generating new session keypair...', 0);
+        || $ec.keychain.encrypt.public_key == null) {
         keyx_new_key(endpoint);
         return;
     }
@@ -171,7 +174,7 @@ function keyx_send_key(endpoint) {
     $ui.log('found existing keypair, broadcasting...', 0);
     socket.emit('!keyx', {
         to: endpoint,
-        pubkey: $ec.jwk_exported_key
+        pubkey: $ec.keychain.encrypt.exported.public_key
     });
 }
 
@@ -385,7 +388,7 @@ function setup_callbacks() {
 
         $ui.update_encrypt_state(data.to);
 
-        $ui.status('Public key sent to ' + data.to + ' (' + $ec.jwk_exported_key_hash.match(/.{1,8}/g).join(' ') + ')');
+        $ui.status('Public key sent to ' + data.to + ' (' + $ec.keychain.encrypt.exported.hash + ')');
         $ui.log('keyx sent to: ' + data.to + ': ' + JSON.stringify(data), 0);
     });
 
