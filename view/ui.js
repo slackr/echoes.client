@@ -197,17 +197,19 @@ EchoesUi.prototype.set_window_state = function(state, on_window) { // encrypted,
     switch (state) {
         case 'encrypted':
         case 'oneway':
-            this.log('setting src to ' + this.assets.encrypt[state])
-            this.ui.buttons.encrypt.attr('src', this.assets.encrypt[state]).attr('alt', state);
-            this.get_window(on_window).attr('encryptionstate', state);
         break;
         default:
-            this.ui.buttons.encrypt.attr('src', this.assets.encrypt.unencrypted).attr('alt', 'unencrypted');
-            this.get_window(on_window).attr('encryptionstate', 'unencrypted');
+            state = 'unencrypted';
         break;
     }
 
+    if (on_window == this.active_window().attr('windowname')) {
+        this.log('setting src to ' + this.assets.encrypt[state]);
+        this.ui.buttons.encrypt.attr('src', this.assets.encrypt[state]).attr('alt', state);
+    }
+    this.get_window(on_window).attr('encryptionstate', state);
 }
+
 EchoesUi.prototype.get_window_state = function(on_window) {
     var state = this.get_window(on_window).attr('encryptionstate');
     return (state ? state : 'unencrypted');
@@ -229,24 +231,18 @@ EchoesUi.prototype.update_encrypt_state = function(for_window) {
 }
 
 
-EchoesUi.prototype.set_keychain_property = function(nick, prop) {
+EchoesUi.prototype.set_keychain_property = function(nick, props) {
     if (typeof $keychain[nick] == 'undefined') {
         $keychain[nick] = {};
         this.log('initialized keychain for ' + nick, 0);
     }
 
-    if (typeof prop.hash != 'undefined') {
-        $keychain[nick]['hash'] = prop.hash;
-    }
-    if (typeof prop.public_key != 'undefined') {
-        $keychain[nick]['public_key'] = prop.public_key;
-    }
-    if (typeof prop.keysent != 'undefined') {
-        $keychain[nick]['keysent'] = prop.keysent;
+    for (var key in props) {
+        $keychain[nick][key] = props[key];
     }
 
     this.update_encrypt_state(nick);
-    this.log('set prop ' + JSON.stringify(prop) + ' on keychain: ' + JSON.stringify($keychain[nick]), 0);
+    this.log('set prop ' + JSON.stringify(props) + ' on keychain: ' + nick, 0);
 }
 
 EchoesUi.prototype.get_keychain_property = function(nick, prop) {
@@ -261,7 +257,7 @@ EchoesUi.prototype.get_keychain_property = function(nick, prop) {
         return null;
     }
 
-    this.log('get prop ' + prop + ' from keychain: ' + JSON.stringify($keychain[nick]), 0);
+    this.log('get prop ' + prop + ' from keychain: ' + nick + ' (' + JSON.stringify($keychain[nick][prop]) + ')', 0);
     return $keychain[nick][prop];
 }
 
