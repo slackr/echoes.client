@@ -96,6 +96,30 @@ function execute_command(params) {
     params.shift();
 
     switch (command) {
+        case '/config':
+            switch(params[0]) {
+                case 'LOG_LEVEL':
+                    var val = parseInt(params[1]);
+                    if (isNaN(val)) {
+                        val = AppConfig.LOG_LEVEL;
+                    }
+                    AppConfig.LOG_LEVEL = val;
+                    $ui.status('AppConfig.LOG_LEVEL = ' + val);
+                    $ui.log('AppConfig.LOG_LEVEL = ' + val, 0);
+                break;
+                case 'CONSOLE_LOG':
+                    var val = (params[1] == "1" || params[1] == "true" ? true : false);
+
+                    AppConfig.CONSOLE_LOG = val;
+                    $ui.status('AppConfig.CONSOLE_LOG = ' + val);
+                    $ui.log('AppConfig.CONSOLE_LOG = ' + val, 0);
+                break;
+                default:
+                    $ui.error('Invalid AppConfig variable');
+                    $ui.log('Invalid AppConfig variable ' + params[0], 3);
+                break;
+            }
+        break;
         case '/clear':
             $ui.ui.echoes.html('');
         break;
