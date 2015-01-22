@@ -12,8 +12,8 @@ $(document).ready(function() {
     $ec = new EchoesCrypto();
     $ui = new EchoesUi();
 
-    $ec.ec_available = $ec.is_browser_ec_compatible();
-    $ec.keychain.use = ($ec.ec_available ? 'keyx' : 'encrypt');
+    $ec.does_browser_support('crypto');
+    $ec.does_browser_support('ec');
 
     $ui.get_me();
 
@@ -192,6 +192,12 @@ function keyx_derive_key(nick, private_key, public_key) {
 }
 
 function keyx_new_key(endpoint, kc) {
+    if (! $ec.browser_support.crypto.supported) {
+        $ui.error('Your browser does not support encrypted echoes, try the latest Chrome/Firefox');
+        $ui.log('browser not marked as supported for crypto: ' + navigator.userAgent, 0);
+        return;
+    }
+
     $ui.status('Generting new session keys...');
     $ui.log('generating new ' + kc + ' session keypair...', 0);
 
@@ -218,7 +224,13 @@ function keyx_new_key(endpoint, kc) {
 }
 
 function keyx_send_key(endpoint) {
-    var kc = $ui.get_keychain_property(endpoint, 'keychain') || ($ec.ec_available ? 'keyx' : 'encrypt');
+    if (! $ec.browser_support.crypto.supported) {
+            $ui.error('Your browser does not support encrypted echoes, try the latest Chrome/Firefox');
+        $ui.log('browser not marked as supported for crypto: ' + navigator.userAgent, 0);
+        return;
+    }
+
+    var kc = $ui.get_keychain_property(endpoint, 'keychain') || ($ec.browser_support.ec.supported ? 'keyx' : 'encrypt');
 
     if (typeof $ec == 'undefined'
         || $ec.keychain[kc].public_key == null) {
@@ -250,6 +262,12 @@ function keyx_off(endpoint, inform_endpoint) {
 }
 
 function keyx_import(data) {
+    if (! $ec.browser_support.crypto.supported) {
+        $ui.error('Your browser does not support encrypted echoes, try the latest Chrome/Firefox');
+        $ui.log('browser not marked as supported for crypto: ' + navigator.userAgent, 0);
+        return;
+    }
+
     var nick = data.from;
     var kc = data.keychain;
     var c = new EchoesCrypto();
@@ -285,6 +303,12 @@ function keyx_import(data) {
 }
 
 function send_encrypted_echo(nick, echo) {
+    if (! $ec.browser_support.crypto.supported) {
+        $ui.error('Your browser does not support encrypted echoes, try the latest Chrome/Firefox');
+        $ui.log('browser not marked as supported for crypto: ' + navigator.userAgent, 0);
+        return;
+    }
+
     if ($ui.get_keychain_property(nick, 'public_key') == null) {
         $ui.error("You do not have a public key for " + nick + ". Initiate a key exchange first.");
         return;
@@ -309,6 +333,12 @@ function send_encrypted_echo(nick, echo) {
     });
 }
 function decrypt_eecho(nick, echo) { // echo is an array of b64 encoded segments
+    if (! $ec.browser_support.crypto.supported) {
+        $ui.error('Your browser does not support encrypted echoes, try the latest Chrome/Firefox');
+        $ui.log('browser not marked as supported for crypto: ' + navigator.userAgent, 0);
+        return;
+    }
+
     var kc = $ui.get_keychain_property(nick, 'keychain');
     if (typeof $ec == 'undefined'
         || kc == null
@@ -447,7 +477,7 @@ function setup_callbacks() {
 
         if (typeof data.keychain != 'undefined'
             && data.keychain == 'keyx'
-            && ! $ec.ec_available) {
+            && ! $ec.browser_support.ec.supported) {
             socket.emit('!keyx_unsupported', {
                 to: data.from
             });
@@ -540,6 +570,13 @@ function setup_callbacks() {
     socket.once('connect', function() {
         $last_error = null;
         $ui.status('Connected!', null, true);
+
+        if (! $ec.browser_support.crypto.supported) {
+            $ui.error('Your browser does not support encrypted echoes, try the latest Chrome/Firefox');
+            $ui.log('browser not marked as supported for crypto: ' + navigator.userAgent, 0);
+            return;
+        }
+
     });
     socket.on('disconnect', function() {
         $keychain = {}; // bye bye nick keys
