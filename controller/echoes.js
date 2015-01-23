@@ -436,12 +436,11 @@ function setup_callbacks() {
     socket.on('*who', function(who) {
         $ui.clear_nicknames();
         for (var n in who.nicknames) {
-            if (who.nicknames[n] != $me) {
-                $ui.add_nickname(who.nicknames[n]);
-            }
+            $ui.add_nickname(who.nicknames[n]);
         }
+
         $ui.status("Who's online? " + who.nicknames.join(', '), null, true);
-        if (! $ui.ui.lists.nicknames.is(':visible')) {
+        if (who.nicknames.length > 1 && ! $ui.ui.lists.nicknames.is(':visible')) {
             $ui.ui.buttons.nicknames.click();
         }
     });
