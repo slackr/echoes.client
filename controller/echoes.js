@@ -225,7 +225,7 @@ function keyx_new_key(endpoint, kc) {
 
 function keyx_send_key(endpoint) {
     if (! $ec.browser_support.crypto.supported) {
-            $ui.error('Your browser does not support encrypted echoes, try the latest Chrome/Firefox');
+        $ui.error('Your browser does not support encrypted echoes, try the latest Chrome/Firefox');
         $ui.log('browser not marked as supported for crypto: ' + navigator.userAgent, 0);
         return;
     }
@@ -243,7 +243,7 @@ function keyx_send_key(endpoint) {
     $ui.log('found existing ' + kc + ' keypair, broadcasting...', 0);
     socket.emit('!keyx', {
         to: endpoint,
-        pubkey: $ec.keychain[kc].exported.public_key,
+        pubkey: btoa($ec.keychain[kc].exported.public_key),
         keychain: kc,
     });
 }
@@ -270,10 +270,11 @@ function keyx_import(data) {
 
     var nick = data.from;
     var kc = data.keychain;
+    var key = atob(data.pubkey);
     var c = new EchoesCrypto();
 
-    c.import_jwk_key(kc, data.pubkey).then(function() {
-        return c.hash(data.pubkey).then(function() {
+    c.import_key(kc, key, 'spki').then(function() {
+        return c.hash(key).then(function() {
             $ui.set_keychain_property(nick, {
                 public_key: c.keychain[kc].imported.public_key,
                 hash: c.resulting_hash.match(/.{1,8}/g).join(' '),
