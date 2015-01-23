@@ -3,9 +3,9 @@ function EchoesUi() {
 
     this.assets = {
         encrypt: {
-            unencrypted: '/client/assets/unencrypted.png',
-            encrypted: '/client/assets/encrypted.png',
-            oneway: '/client/assets/oneway.png',
+            unencrypted: $('#icon_unencrypted'),
+            encrypted: $('#icon_encrypted'),
+            oneway: $('#icon_oneway'),
         }
     }
 
@@ -20,7 +20,7 @@ function EchoesUi() {
         buttons: {
             nicknames: $('#menu_nicknames'),
             channels: $('#menu_channels'),
-            encrypt: $('#encrypt_img'),
+            encrypt: $('#encrypt'),
         },
         lists: {
             close_lists: $('#close_lists'),
@@ -209,10 +209,6 @@ EchoesUi.prototype.set_window_state = function(state, on_window) { // encrypted,
         break;
     }
 
-    if (on_window == this.active_window().attr('windowname')) {
-        this.log('setting src to ' + this.assets.encrypt[state]);
-        this.ui.buttons.encrypt.attr('src', this.assets.encrypt[state]).attr('alt', state);
-    }
     this.get_window(on_window).attr('encryptionstate', state);
 }
 
@@ -233,6 +229,15 @@ EchoesUi.prototype.update_encrypt_state = function(for_window) {
     }
 
     this.set_window_state(state, for_window);
+
+    if (for_window == this.active_window().attr('windowname')) {
+        this.log('setting active window icon to ' + state, 0);
+        for (var icon in this.assets.encrypt) {
+            this.assets.encrypt[icon].hide();
+        }
+        this.assets.encrypt[state].show();
+    }
+
     this.log('window ' + for_window + ' set to ' + state + ' s:' + sent_decrypt_key + ' r:' + received_encrypt_key);
 }
 

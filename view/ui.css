@@ -142,6 +142,10 @@ body {
     width: 400px;
     text-align: center;
 }
+#current_window_name {
+    display: none;
+    padding: 0px 10px 0px 10px;
+}
 
 #encrypt {
     cursor: pointer;
@@ -151,11 +155,17 @@ body {
     padding: 6px;
     padding-left: 11px;
 }
-#encrypt_img {
+#icon_unencrypted, #icon_oneway, #icon_encrypted {
     display: none;
 }
 
-#current_window_name {
-    display: none;
-    padding: 0px 10px 0px 10px;
+#icon_encrypted {
+    fill: rgba(9, 176, 0, 1);
+}
+#icon_oneway {
+    fill: rgb(253, 196, 0);
+}
+
+#icon_unencrypted {
+    fill: rgba(0, 0, 0, 0.5);
 }
