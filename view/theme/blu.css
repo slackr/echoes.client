@@ -1,45 +1,45 @@
 body {
-    background-color: rgb(54, 54, 54);
+    background-color: rgb(66, 133, 244);
     color: rgb(232, 232, 232);
 }
 
 #menubar {
-    background-color: rgb(54, 54, 54);
+    background-color: rgb(66, 133, 244);
     color: rgb(255, 255, 255);
-    box-shadow: 0px 0px 3px 0px rgb(0, 0, 0);
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.14), 2px 2px 4px rgba(0, 0, 0, 0.28);
 }
 #menubar > li { /* menu buttons */
-    font-weight: bold;
 }
 
 #current_window_name {
-    color: rgb(232, 232, 232);
+    color: rgb(245, 245, 245);
+    font-weight: bold;
     opacity: 0.5;
 }
 
 #wall {
-    background-color: rgb(248, 248, 248);
+    background-color: rgb(255, 255, 255);
     color: rgb(54, 54, 54);
 }
 
 #input {
-    background-color: rgb(248, 248, 248);
+    background-color: rgb(255, 255, 255);
     color: rgb(54, 54, 54);
     box-shadow: 0px 0px 1px 0px rgb(200, 200, 200);
 }
 
 #input_wrapper {
-    border-bottom-color: rgb(132, 132, 132);
+    border-bottom-color: rgb(66, 133, 244);
 }
 
 #echo_input {
     background: transparent;
-    color: rgb(54, 54, 54);
+    color: rgb(66, 133, 244);
 }
 
 #me {
-    background-color: rgb(0, 0, 0);
-    color: rgb(232, 232, 232);
+    background-color: rgb(66, 133, 244);
+    color: rgb(255, 255, 255);
 }
 
 #me_wrapper {
@@ -47,12 +47,12 @@ body {
     font-weight: bold;
     font-size: 25px;
 
-    border-bottom-color: rgb(132, 132, 132);
+    border-bottom-color: rgb(255, 255, 255);
 }
 
 #me_input {
     background: transparent;
-    color: rgb(232, 232, 232);
+    color: rgb(255, 255, 255);
 }
 
 #close_lists {
@@ -60,8 +60,8 @@ body {
 }
 
 #nicknames, #channels {
-    background-color: rgb(54, 54, 54);
-    color: rgb(255, 255, 255);
+    background-color: rgb(255, 255, 255);
+    color: rgb(66, 133, 244);
     box-shadow: 0px 0px 3px 0px rgb(0, 0, 0);
 }
 
@@ -70,20 +70,20 @@ body {
 }
 
 #nicknames > li:hover, #channels > li:hover, .ui_selected_window {
-    background: rgb(232, 232, 232);
-    color: rgb(54, 54, 54);
+    background: rgb(244, 244, 244);
+    color: rgb(66, 133, 244);
 }
 
 .ui_echo {
     background-color: rgb(255, 255, 255);
     color: rgb(54, 54, 54);
     font-weight: bold;
+    box-shadow: 0px 0px 1px 0px rgb(200, 200, 200);
 }
 .ui_error {
    color: rgb(176, 0, 4);
    font-weight: bold;
 }
-
-::-webkit-input-placeholder {
-   opacity: 0.5 !important;
+.ui_window_me {
+    opacity: 0.5;
 }

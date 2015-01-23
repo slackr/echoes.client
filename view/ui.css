@@ -1,6 +1,6 @@
 * {
-    margin: 0;
     padding: 0;
+    margin: 0;
     box-sizing: border-box;
 }
 
@@ -77,10 +77,6 @@ body {
     border-bottom-style: solid;
 }
 
-::-webkit-input-placeholder {
-   opacity: 0.5 !important;
-}
-
 #menu_channels, #menu_nicknames {
     cursor: pointer;
     padding-left: 5px;
@@ -102,7 +98,7 @@ body {
     display: none;
     z-index: 100;
     font-size: 15px;
-    padding: 10px;
+    padding-top: 10px;
 }
 
 #nicknames > li, #channels > li {
@@ -136,7 +132,6 @@ body {
     height: 100%;
     width: 100%;
     z-index: 200;
-    opacity: 1;
     display: block;
 }
 #me_wrapper {
@@ -162,6 +157,5 @@ body {
 
 #current_window_name {
     display: none;
-    padding: 0px 20px 0px 20px;
-    opacity: 0.5;
+    padding: 0px 10px 0px 10px;
 }

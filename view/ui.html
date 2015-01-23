@@ -7,10 +7,13 @@
     <title>Echoes ))) Peer-to-Peer Encrypted Messaging</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="shortcut icon" href="favicon.ico"/>
+
+    <link href="/client/view/normalize.css" rel="stylesheet" type="text/css" />
     <link href="/client/view/ui.css" rel="stylesheet" type="text/css" />
-    <link href="/client/view/theme/dark.css" rel="stylesheet" type="text/css" />
+    <link href="/client/view/theme/blu.css" rel="stylesheet" type="text/css" />
     <!--<link href="https://fonts.googleapis.com/css?family=Roboto:400,100,300,500" rel="stylesheet" type="text/css" />-->
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.2.1/socket.io.js"></script>
+
+    <script type="text/javascript" src="https://cdn.socket.io/socket.io-1.3.2.js"></script>
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js"></script>
     <script type="text/javascript" src="/client/lib/config.js"></script>
@@ -19,33 +22,33 @@
     <script type="text/javascript" src="/client/view/ui.js"></script>
     <script type="text/javascript" src="/client/controller/echoes.js"></script>
 </head>
-<body class="theme_bg_dark theme_color_light">
-    <ul id="menubar" class="theme_bg_dark theme_color_white theme_bold theme_shadow">
-        <li id="menu_channels" class="theme_bold">&#8801;<!--#--></li>
-        <li id="menu_nicknames" class="theme_bold">&#8801;</li>
+<body>
+    <ul id="menubar">
+        <li id="menu_channels">&#8801;</li>
+        <li id="menu_nicknames">&#8801;</li>
 
-        <li id="current_window_name" class="theme_bold theme_color_light"></li>
+        <li id="current_window_name"></li>
     </ul>
-    <div id="wall" class="theme_bg_whitedark theme_color_dark">
+    <div id="wall">
         <ul id="echoes" windowname=")))"></ul>
     </div>
-    <div id="input" class="theme_bg_dark theme_color_white theme_shadow">
-        <div id="input_wrapper" class="theme_border-bottom_dark">
-            <input id="echo_input" autocomplete="off" maxlength="140" placeholder=")))" class="theme_color_light theme_bg_transparent" />
+    <div id="input">
+        <div id="input_wrapper">
+            <input id="echo_input" autocomplete="off" maxlength="140" placeholder=")))" />
         </div>
     </div>
 
-    <div id="me" class="theme_bg_black theme_color_white">
-        <div id="me_wrapper" class="theme_border-bottom_dark">
-            <div class="theme_color_light theme_bold">)))</div>
+    <div id="me">
+        <div id="me_wrapper">
+            <div>)))</div>
             <br />
 
-            <input id="me_input" autocomplete="off" maxlength="20" placeholder="" class="theme_color_light theme_bg_transparent" />
+            <input id="me_input" autocomplete="off" maxlength="20" placeholder="" />
         </div>
     </div>
-    <div id="close_lists" class="theme_bg_transparent"></div>
-    <ul id="nicknames" class="theme_bg_dark theme_color_light theme_bold theme_shadow"></ul>
-    <ul id="channels" class="theme_bg_dark theme_color_light theme_bold theme_shadow">
+    <div id="close_lists"></div>
+    <ul id="nicknames"></ul>
+    <ul id="channels">
         <li windowname=")))">)))</li>
     </ul>
     <div id="encrypt"><img id="encrypt_img" src="/client/assets/unencrypted.png" alt="unencrypted" /></div>
