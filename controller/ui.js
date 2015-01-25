@@ -1,3 +1,17 @@
+/**
+ * Echoes Client
+ *
+ * @author  Adrian@Slacknet
+ * @license http://www.gnu.org/licenses/gpl-3.0.txt GPLv3
+ */
+
+/**
+ * UI controller that handles CRUD operations on UI elements
+ * Session keychain is also managed here
+ *
+ * @class
+ * @extends EchoesObject
+ */
 function EchoesUi() {
     EchoesObject.call(this, 'ui');
 
@@ -31,10 +45,15 @@ function EchoesUi() {
 
     this.attach_events();
 }
-
-EchoesUi.prototype = Object.create(EchoesObject.prototype); // inherit EchoesObject
+EchoesUi.prototype = Object.create(EchoesObject.prototype);
 EchoesUi.prototype.constructor = EchoesUi;
 
+/**
+ * Attaches required events to UI elements
+ * Displays the echoes window at the end
+ *
+ * @returns {null}
+ */
 EchoesUi.prototype.attach_events = function() {
     var self = this;
 
@@ -75,11 +94,26 @@ EchoesUi.prototype.attach_events = function() {
     this.show_window(this.ui.echoes.attr('windowname'));
 }
 
+/**
+ * Scrolls the wall down
+ *
+ * @returns {null}
+ */
 EchoesUi.prototype.scroll_down = function() {
     var win = this.ui.wall;
     win.scrollTop(win.prop("scrollHeight"));
 };
 
+/**
+ * Creates echo element on wall
+ *
+ * @param   {string} echo       Text to add to text node
+ * @param   {string} where      Window name to display to, if null display in active window
+ * @param   {bool} and_echoes   Also display in the echoes window
+ * @param   {string} add_class  A list of CSS classes separated by space to add to element
+ *
+ * @returns {null}
+ */
 EchoesUi.prototype.echo = function(echo, where, and_echoes, add_class) {
     add_class = add_class || 'ui_echo';
     where = (typeof where == 'string' ? where : $(this.active_window()).attr('windowname'));
@@ -105,10 +139,32 @@ EchoesUi.prototype.echo = function(echo, where, and_echoes, add_class) {
     this.ui.input.focus();
 };
 
+/**
+ * A wrapper to display a status echo
+ *
+ * @see EchoesUi#echo
+ *
+ * @returns {null}
+ */
 EchoesUi.prototype.status = function(status, where, and_echoes) {
     this.echo(status, where, and_echoes, ' ');
 };
 
+/**
+ * A wrapper to display an error echo
+ *
+ * error can be string or object:
+ *
+ * if object = { error: 'message', debug: 'detailed message' }
+ *
+ * *.debug will be attached if AppConfig.LOG_LEVEL is 0
+ *
+ * @param   {string|object} Error message to display with an optional debug attached if object
+ *
+ * @see EchoesUi#echo
+ *
+ * @returns {null}
+ */
 EchoesUi.prototype.error = function(error, where, and_echoes) {
     var error_out = error;
     if (typeof error == 'object') {
@@ -117,31 +173,81 @@ EchoesUi.prototype.error = function(error, where, and_echoes) {
     this.echo(error_out, where, and_echoes, 'ui_error');
 };
 
+/**
+ * Find the active window element and return it as jquery object
+ *
+ * @returns {object[]} jQuery object array (hopefully just one...) or []
+ */
 EchoesUi.prototype.active_window = function() {
     return this.ui.wall.find('ul:visible');
 }
 
+/**
+ * Find all the joined channels using windowtype element property
+ *
+ * @returns {object[]} jQuery object array or []
+ */
 EchoesUi.prototype.joined_channels = function() {
-    return this.ui.lists.channels.find('li:not([windowname="' + this.ui.echoes.attr('windowname') + '"])');
+    return this.ui.lists.channels.find('li[windowtype="channel"]');
 }
+
+/**
+ * Find all the opened windows
+ *
+ * @returns {object[]} jQuery object array or []
+ */
 EchoesUi.prototype.opened_windows = function() {
     return this.ui.wall.find('ul');
 }
 
+/**
+ * Remove a channel element from the channels list using the windowname element property
+ *
+ * @param   {string} chan Channel to remove
+ *
+ * @returns {null}
+ */
 EchoesUi.prototype.remove_channel = function(chan) {
     this.ui.lists.channels.find('li[windowname="' + chan + '"]').remove();
 }
+
+/**
+ * Remove a nickname element from the nicknames list using the windowname element property
+ *
+ * @param   {string} nick Nickname to remove
+ *
+ * @returns {null}
+ */
 EchoesUi.prototype.remove_nickname = function(nick) {
     this.ui.lists.nicknames.find('li[windowname="' + nick + '"]').remove();
 }
 
+/**
+ * Empty the channels list
+ *
+ * @returns {null}
+ */
 EchoesUi.prototype.clear_channels = function() {
     this.ui.lists.channels.html('');
 }
+/**
+ * Empty the nicknames list
+ *
+ * @returns {null}
+ */
 EchoesUi.prototype.clear_nicknames = function() {
     this.ui.lists.nicknames.html('');
 }
 
+/**
+ * Add a channel element to the channels list if it doesn't exist already
+ * Also adds a 'channel' type window
+ * Does not show the window
+ *
+ * @param   {string} chan Which name to use
+ *
+ * @returns {null}
+ */
 EchoesUi.prototype.add_channel = function(chan) {
     if (this.ui.lists.channels.find('li[windowname="' + chan + '"]').length > 0) {
         return;
@@ -156,6 +262,14 @@ EchoesUi.prototype.add_channel = function(chan) {
     this.add_window(chan, 'channel');
 }
 
+/**
+ * Adds a nickname element to the nicknames list if it doesn't exist already
+ * Does NOT add a nickname window, this will happen on click() event
+ *
+ * @param   {string} nick Which name to use
+ *
+ * @returns {null}
+ */
 EchoesUi.prototype.add_nickname = function(nick) {
     if (this.ui.lists.nicknames.find('li[windowname="' + nick + '"]').length > 0) {
         return;
@@ -173,6 +287,19 @@ EchoesUi.prototype.add_nickname = function(nick) {
     this.ui.lists.nicknames.append(nick_element);
 }
 
+/**
+ * Creates a new hidden window if it doesn't exist already
+ * Adds a welcome status to 'nickname' types
+ *
+ * Type can be: 'nickname' or 'channel'
+ *
+ * The default type is 'channel'
+ *
+ * @param   {string} name Window name to use
+ * @param   {string} type     (optional) Type of window (eg: nickname or channel)
+ *
+ * @returns {Type} Description
+ */
 EchoesUi.prototype.add_window = function(name, type) {
     type = type || 'channel';
 
@@ -191,14 +318,44 @@ EchoesUi.prototype.add_window = function(name, type) {
         this.status('Say hi to ' + name, name);
     }
 }
+
+/**
+ * Remove window by windowname property
+ *
+ * @param   {string} name Window name to remove
+ *
+ * @returns {null}
+ */
 EchoesUi.prototype.remove_window = function(name) {
     this.ui.wall.find('ul[windowname="' + name + '"]').remove();
 }
 
+/**
+ * Retrieve a window by windowname property
+ *
+ * Returns a jQuery object of the window
+ *
+ * @param   {string} name Window name
+ *
+ * @returns {object[]} jQuery object array of window or [] if nothing found
+ */
 EchoesUi.prototype.get_window = function(name) {
     return this.ui.wall.find('ul[windowname="' + name + '"]');
 }
 
+/**
+ * Sets the encryptionstate property for a window
+ *
+ * The allowed states:
+ * encrypted
+ * unencrypted
+ * oneway
+ *
+ * @param   {string} state    The state of the window
+ * @param   {string} on_window   Window name to set the state on
+ *
+ * @returns {null}
+ */
 EchoesUi.prototype.set_window_state = function(state, on_window) { // encrypted, unencrypted, oneway
     switch (state) {
         case 'encrypted':
@@ -212,11 +369,29 @@ EchoesUi.prototype.set_window_state = function(state, on_window) { // encrypted,
     this.get_window(on_window).attr('encryptionstate', state);
 }
 
+/**
+ * Get the window encryptionstate value
+ *
+ * @param   {string} on_window Window name
+ *
+ * @returns {string} Encryption state (if null return 'unencrypted')
+ */
 EchoesUi.prototype.get_window_state = function(on_window) {
     var state = this.get_window(on_window).attr('encryptionstate');
     return (state ? state : 'unencrypted');
 }
 
+/**
+ * Determines the encryption state for a window and sets the window state accordingly
+ *
+ * Changes the icon to the matching encryption state asset
+ *
+ * @see EchoesUi#set_window_state
+ *
+ * @param   {string} for_window Window name
+ *
+ * @returns {null}
+ */
 EchoesUi.prototype.update_encrypt_state = function(for_window) {
     var sent_decrypt_key = (this.get_keychain_property(for_window, 'keysent') == true ? true : false);
     var received_encrypt_key = (this.get_keychain_property(for_window, 'public_key') != null ? true : false);
@@ -241,7 +416,20 @@ EchoesUi.prototype.update_encrypt_state = function(for_window) {
     this.log('window ' + for_window + ' set to ' + state + ' s:' + sent_decrypt_key + ' r:' + received_encrypt_key);
 }
 
-
+/**
+ * Sets a $keychain property for a nick and initializes if chain is not defined yet
+ *
+ * Also updates the encryption state for windowname='nick'
+ *
+ * props = { public_key: '', symkey: '', keysent: true, ... }
+ *
+ * @see EchoesUi#update_encrypt_state
+ *
+ * @param   {string} nick     Nickname to set property on
+ * @param   {object} props    Set of properties to apply to keychain for nick
+ *
+ * @returns {null}
+ */
 EchoesUi.prototype.set_keychain_property = function(nick, props) {
     if (typeof $keychain[nick] == 'undefined') {
         $keychain[nick] = {};
@@ -256,6 +444,14 @@ EchoesUi.prototype.set_keychain_property = function(nick, props) {
     this.log('set prop ' + JSON.stringify(props) + ' on keychain: ' + nick, 0);
 }
 
+/**
+ * Get a property value from a nick's $keychain
+ *
+ * @param   {string} nick     Nickname to get property from
+ * @param   {string} prop     Property to retrieve
+ *
+ * @returns {null|string} Return property value or null
+ */
 EchoesUi.prototype.get_keychain_property = function(nick, prop) {
     prop = prop || 'public_key';
 
@@ -272,6 +468,18 @@ EchoesUi.prototype.get_keychain_property = function(nick, prop) {
     return $keychain[nick][prop];
 }
 
+/**
+ * Shows a window on the wall and hides all others
+ * Also sets the CSS ui selected window property in the nickname/channel list
+ * Also calls EchoesUi#scroll_down and focuses the input echo_input
+ * Also changes the current_window_name position based on type of window
+ *
+ * @see EchoesUi#scroll_down
+ *
+ * @param   {string} name Window name
+ *
+ * @returns {null}
+ */
 EchoesUi.prototype.show_window = function(name) {
     var self = this;
 
@@ -302,6 +510,13 @@ EchoesUi.prototype.show_window = function(name) {
     });
 }
 
+/**
+ * Displas the nickname input window and adjusts the placeholder value
+ *
+ * @param   {string} message Message to display
+ *
+ * @returns {null}
+ */
 EchoesUi.prototype.get_me = function(message) {
     var self = this;
     message = message || 'What do they call you?';
@@ -314,11 +529,24 @@ EchoesUi.prototype.get_me = function(message) {
     this.ui.me_input.focus();
 }
 
+/**
+ * Hides the nickname input window
+ *
+ * @returns {null}
+ */
 EchoesUi.prototype.hide_me = function() {
     this.ui.me_input.val(':)');
     this.ui.me.fadeOut('slow');
 }
 
+/**
+ * Show or hide the encryption icon near the input.
+ * Slides the input cursor 30px on show()
+ *
+ * @param   {bool} on_off On or off
+ *
+ * @returns {null}
+ */
 EchoesUi.prototype.toggle_encrypt_icon = function(on_off) {
     var padding = '30px';
     if (on_off) {
