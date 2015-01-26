@@ -188,7 +188,7 @@ EchoesUi.prototype.active_window = function() {
  * @returns {object[]} jQuery object array or []
  */
 EchoesUi.prototype.joined_channels = function() {
-    return this.ui.lists.channels.find('li[windowtype="channel"]');
+    return this.ui.wall.find('ul[windowtype="channel"]');
 }
 
 /**
@@ -228,7 +228,11 @@ EchoesUi.prototype.remove_nickname = function(nick) {
  * @returns {null}
  */
 EchoesUi.prototype.clear_channels = function() {
-    this.ui.lists.channels.html('');
+    var self = this;
+
+    this.ui.wall.find('ul[windowtype="channel"]').each(function() {
+        self.ui.lists.channels.find('li[windowname="' + $(this).attr('windowname') + '"]').remove();
+    });
 }
 /**
  * Empty the nicknames list
@@ -493,7 +497,7 @@ EchoesUi.prototype.show_window = function(name) {
     this.ui.wall.find('ul:visible').hide();
     self.ui.current_window_name.fadeOut('fast');
 
-    this.ui.wall.find('ul[windowname="' + name + '"]').show(function() {
+    this.ui.wall.find('ul[windowname="' + name + '"]').fadeIn('fast', function() {
 
         self.ui.current_window_name.text(name);
 
