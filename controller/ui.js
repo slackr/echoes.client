@@ -110,7 +110,7 @@ EchoesUi.prototype.scroll_down = function() {
  * @param   {string} echo       Text to add to text node
  * @param   {string} where      Window name to display to, if null display in active window
  * @param   {bool} and_echoes   Also display in the echoes window
- * @param   {string} add_class  A list of CSS classes separated by space to add to element
+ * @param   {string} add_class  (default='ui_echo') A list of CSS classes separated by space to add to element
  *
  * @returns {null}
  */
@@ -296,7 +296,7 @@ EchoesUi.prototype.add_nickname = function(nick) {
  * The default type is 'channel'
  *
  * @param   {string} name Window name to use
- * @param   {string} type     (optional) Type of window (eg: nickname or channel)
+ * @param   {string} type     (default='channel') Type of window (eg: nickname or channel)
  *
  * @returns {Type} Description
  */
@@ -447,8 +447,10 @@ EchoesUi.prototype.set_keychain_property = function(nick, props) {
 /**
  * Get a property value from a nick's $keychain
  *
+ * Default prop = 'public_key'
+ *
  * @param   {string} nick     Nickname to get property from
- * @param   {string} prop     Property to retrieve
+ * @param   {string} prop     (default='public_key') Property to retrieve
  *
  * @returns {null|string} Return property value or null
  */
@@ -512,6 +514,8 @@ EchoesUi.prototype.show_window = function(name) {
 
 /**
  * Displas the nickname input window and adjusts the placeholder value
+ *
+ * Default message = 'What do they call you?'
  *
  * @param   {string} message Message to display
  *
