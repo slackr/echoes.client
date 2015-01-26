@@ -86,8 +86,7 @@ body {
 
 #menu_channels, #menu_nicknames {
     cursor: pointer;
-    padding-left: 5px;
-    padding-right: 5px;
+    padding: 5px;
 }
 #menu_channels {
     float: left;
@@ -152,6 +151,7 @@ body {
 #current_window_name {
     display: none;
     padding: 0px 10px 0px 10px;
+    margin-left: 30px;
 }
 
 #encrypt {

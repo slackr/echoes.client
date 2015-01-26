@@ -503,10 +503,10 @@ EchoesUi.prototype.show_window = function(name) {
 
         if ($(this).attr('windowtype') == 'nickname') {
             self.toggle_encrypt_icon(true);
-            self.ui.current_window_name.css('float', 'right');
+            //self.ui.current_window_name.css('float', 'right');
         } else {
             self.toggle_encrypt_icon(false);
-            self.ui.current_window_name.css('float', 'left');
+            //self.ui.current_window_name.css('float', 'left');
         }
 
         self.ui.current_window_name.fadeIn('fast');

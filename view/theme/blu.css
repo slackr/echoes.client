@@ -15,13 +15,15 @@ body {
     color: rgb(255, 255, 255);
     box-shadow: 0 0 2px rgba(0, 0, 0, 0.14), 2px 2px 4px rgba(0, 0, 0, 0.28);
 }
+#menubar > li > svg { /* svg menu buttons */
+    fill: rgb(255, 255, 255);
+}
 #menubar > li { /* menu buttons */
 }
 
 #current_window_name {
     color: rgb(245, 245, 245);
-    font-weight: bold;
-    opacity: 0.5;
+    opacity: 1;
 }
 
 #wall {
@@ -51,8 +53,7 @@ body {
 
 #me_wrapper {
     color: rgb(232, 232, 232);
-    font-weight: bold;
-    font-size: 25px;
+    font-size: 40px;
 
     border-bottom-color: rgb(255, 255, 255);
 }
@@ -93,4 +94,8 @@ body {
 }
 .ui_window_me {
     opacity: 0.5;
+}
+
+::-webkit-input-placeholder {
+   opacity: 1 !important;
 }
