@@ -5,14 +5,45 @@
  * @license http://www.gnu.org/licenses/gpl-3.0.txt GPLv3
  */
 
+/**
+ * require('../lib/config.js'); //AppConfig
+ * require('../lib/object.js'); //EchoesObject
+ * require('../lib/crypto.js'); //EchoesCrypto
+ */
+
+/**
+ * @type string The nickname assigned to active connection
+ */
 var $me = null;
+
+/**
+ * @type EchoesCrypto Client global EC object
+ */
 var $ec = null;
+
+/**
+ * @type EchoesUi Client global UI object
+ */
 var $ui = null;
+
+/**
+ * @type string Session ID to pass to server for verification
+ */
 var $session_id = null;
 
+/**
+ * @type string Store last connect/reconnect error from socket.io
+ */
 var $last_error = null;
+
+/**
+ * @type Object A hash of nicknames and their imported keys/symkeys
+ */
 var $keychain = {};
-var $keychain_pending = {};
+
+/**
+ * @type Socket Socket.io main global object
+ */
 var socket = null;
 
 $(document).ready(function() {
@@ -25,6 +56,7 @@ $(document).ready(function() {
     $ui.get_me();
 
     $(window).keydown(function(event) {
+        // change input focus depending on what window is visible
         if (! (event.ctrlKey
                || event.metaKey
                || event.altKey)) {
@@ -35,6 +67,7 @@ $(document).ready(function() {
             }
         }
 
+        // on return keydown, if me_input is visible, assume a new connection needs to be made
         if (event.which == 13) {
             if ($ui.ui.me.is(':visible')) {
                 $me = $ui.ui.me_input.val();
