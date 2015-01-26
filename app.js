@@ -17,12 +17,17 @@
 var $me = null;
 
 /**
- * @type EchoesCrypto Client global EC object
+ * @type EchoesCrypto Global crypto object
  */
-var $ec = null;
+var $crypto = null;
 
 /**
- * @type EchoesUi Client global UI object
+ * @type EchoesClient Global client object
+ */
+var $client = null;
+
+/**
+ * @type EchoesUi Global UI object
  */
 var $ui = null;
 
@@ -47,11 +52,12 @@ var $keychain = {};
 var socket = null;
 
 $(document).ready(function() {
-    $ec = new EchoesCrypto();
+    $crypto = new EchoesCrypto();
     $ui = new EchoesUi();
+    $client = new EchoesClient(socket, $ui, $crypto);
 
-    $ec.does_browser_support('crypto');
-    $ec.does_browser_support('ec');
+    $crypto.does_browser_support('crypto');
+    $crypto.does_browser_support('ec');
 
     $ui.get_me();
 
@@ -84,7 +90,8 @@ $(document).ready(function() {
                 $ui.error('Not connected :(');
                 return;
             }
-            send_echo();
+            
+            $client.send_echo();
         }
     });
 
@@ -96,114 +103,16 @@ $(document).ready(function() {
             case 'encrypted':
                 var turnoff = confirm('Turn off encryption for ' + endpoint + '?');
                 if (turnoff) {
-                    execute_command(['/keyx_off', endpoint]);
+                    $client.execute_command(['/keyx_off', endpoint]);
                 }
             break;
             case 'unencrypted':
             case 'oneway':
-                execute_command(['/keyx', endpoint]);
+                $client.execute_command(['/keyx', endpoint]);
             break;
         }
     });
 });
-
-function send_echo() {
-    var echo = $ui.ui.input.val();
-    var split = echo.trim().split(' ');
-    var to = $ui.active_window().attr('windowname');
-
-    if (echo == '') {
-        $ui.ui.input.focus();
-        return;
-    }
-
-    if (split[0][0] == '/') {
-        execute_command(split);
-    } else {
-        if ($ui.active_window().attr('encryptionstate') == 'encrypted') {
-            execute_command(['/eecho', to, echo]);
-        } else {
-            execute_command(['/echo', to, echo]);
-        }
-    }
-
-    $ui.ui.input.val('');
-    $ui.ui.input.focus();
-}
-
-function execute_command(params) {
-    var command = params[0];
-    params.shift();
-
-    switch (command) {
-        case '/config':
-            switch(params[0]) {
-                case 'LOG_LEVEL':
-                    var val = parseInt(params[1]);
-                    if (isNaN(val)) {
-                        val = AppConfig.LOG_LEVEL;
-                    }
-                    AppConfig.LOG_LEVEL = val;
-                    $ui.status('AppConfig.LOG_LEVEL = ' + val);
-                    $ui.log('AppConfig.LOG_LEVEL = ' + val, 0);
-                break;
-                case 'CONSOLE_LOG':
-                    var val = (params[1] == "1" || params[1] == "true" ? true : false);
-
-                    AppConfig.CONSOLE_LOG = val;
-                    $ui.status('AppConfig.CONSOLE_LOG = ' + val);
-                    $ui.log('AppConfig.CONSOLE_LOG = ' + val, 0);
-                break;
-                default:
-                    $ui.error('Invalid AppConfig variable');
-                    $ui.log('Invalid AppConfig variable ' + params[0], 3);
-                break;
-            }
-        break;
-        case '/clear':
-            $ui.ui.echoes.html('');
-        break;
-        case '/pm':
-        case '/msg':
-        case '/private':
-        case '/win':
-        case '/window':
-        case '/query':
-            var nick = params[0];
-            socket.emit('/pm', nick);
-        break;
-        case '/echo':
-            var chan = params[0];
-            var echo = params[1];
-
-            $ui.echo($me + ' ))) ' + echo);
-            socket.emit('/echo', { echo: echo, to: chan });
-        break;
-        case '/eecho':
-            var nick = params[0];
-            var plaintext = params[1];
-
-            send_encrypted_echo(nick, plaintext);
-        break;
-        case '/keyx':
-            keyx_send_key(params[0]);
-        break;
-        case '/keyx_off':
-            keyx_off(params[0], true);
-        break;
-        default:
-            socket.emit(command, params);
-            $ui.log('passed unhandled command to server: ' + command + ' ' + params.join(' '), 1);
-        break
-    }
-}
-
-function join_channels() {
-    $ui.log('Auto-joining channels...', 1);
-    $ui.joined_channels().each(function() {
-        execute_command(['/join', $(this).attr('windowname')]);
-    });
-}
 
 function keyx_derive_key(nick, private_key, public_key) {
     if (! private_key || ! public_key) {
@@ -232,7 +141,7 @@ function keyx_derive_key(nick, private_key, public_key) {
 }
 
 function keyx_new_key(endpoint, kc) {
-    if (! $ec.browser_support.crypto.supported) {
+    if (! $crypto.browser_support.crypto.supported) {
         $ui.error('Your browser does not support encrypted echoes, try the latest Chrome/Firefox');
         $ui.log('browser not marked as supported for crypto: ' + navigator.userAgent, 0);
         return;
@@ -241,13 +150,13 @@ function keyx_new_key(endpoint, kc) {
     $ui.status('Generting new session keys...');
     $ui.log('generating new ' + kc + ' session keypair...', 0);
 
-    $ec.generate_key(kc).then(function() {
+    $crypto.generate_key(kc).then(function() {
         $ui.log(kc + ' keypair generated, exporting...', 0);
-        return $ec.export_key(kc + '_public').then(function() {
+        return $crypto.export_key(kc + '_public').then(function() {
             $ui.log(kc + ' public key exported successfully', 0);
 
-            return $ec.hash($ec.keychain[kc].exported.public_key).then(function() {
-                $ec.keychain[kc].exported.hash = $ec.resulting_hash.match(/.{1,8}/g).join(' ');
+            return $crypto.hash($crypto.keychain[kc].exported.public_key).then(function() {
+                $crypto.keychain[kc].exported.hash = $crypto.resulting_hash.match(/.{1,8}/g).join(' ');
                 if (typeof endpoint != 'undefined') {
                     $ui.log('sending ' + kc + ' public key to endpoint: ' + endpoint, 0);
                     keyx_send_key(endpoint);
@@ -264,16 +173,16 @@ function keyx_new_key(endpoint, kc) {
 }
 
 function keyx_send_key(endpoint) {
-    if (! $ec.browser_support.crypto.supported) {
+    if (! $crypto.browser_support.crypto.supported) {
         $ui.error('Your browser does not support encrypted echoes, try the latest Chrome/Firefox');
         $ui.log('browser not marked as supported for crypto: ' + navigator.userAgent, 0);
         return;
     }
 
-    var kc = $ui.get_keychain_property(endpoint, 'keychain') || ($ec.browser_support.ec.supported ? 'keyx' : 'encrypt');
+    var kc = $ui.get_keychain_property(endpoint, 'keychain') || ($crypto.browser_support.ec.supported ? 'keyx' : 'encrypt');
 
-    if (typeof $ec == 'undefined'
-        || $ec.keychain[kc].public_key == null) {
+    if (typeof $crypto == 'undefined'
+        || $crypto.keychain[kc].public_key == null) {
         keyx_new_key(endpoint, kc);
         return;
     }
@@ -283,7 +192,7 @@ function keyx_send_key(endpoint) {
     $ui.log('found existing ' + kc + ' keypair, broadcasting...', 0);
     socket.emit('!keyx', {
         to: endpoint,
-        pubkey: btoa($ec.keychain[kc].exported.public_key),
+        pubkey: btoa($crypto.keychain[kc].exported.public_key),
         keychain: kc,
     });
 }
@@ -302,7 +211,7 @@ function keyx_off(endpoint, inform_endpoint) {
 }
 
 function keyx_import(data) {
-    if (! $ec.browser_support.crypto.supported) {
+    if (! $crypto.browser_support.crypto.supported) {
         $ui.error('Your browser does not support encrypted echoes, try the latest Chrome/Firefox');
         $ui.log('browser not marked as supported for crypto: ' + navigator.userAgent, 0);
         return;
@@ -322,7 +231,7 @@ function keyx_import(data) {
             });
 
             if (kc == 'keyx') {
-                keyx_derive_key(nick, $ec.keychain[kc].private_key, $ui.get_keychain_property(nick, 'public_key'));
+                keyx_derive_key(nick, $crypto.keychain[kc].private_key, $ui.get_keychain_property(nick, 'public_key'));
             }
 
             $ui.status('Imported ' + kc + ' public key from ' + nick + ' (' + $keychain[nick].hash + ')');
@@ -344,7 +253,7 @@ function keyx_import(data) {
 }
 
 function send_encrypted_echo(nick, echo) {
-    if (! $ec.browser_support.crypto.supported) {
+    if (! $crypto.browser_support.crypto.supported) {
         $ui.error('Your browser does not support encrypted echoes, try the latest Chrome/Firefox');
         $ui.log('browser not marked as supported for crypto: ' + navigator.userAgent, 0);
         return;
@@ -374,16 +283,16 @@ function send_encrypted_echo(nick, echo) {
     });
 }
 function decrypt_eecho(nick, echo) { // echo is an array of b64 encoded segments
-    if (! $ec.browser_support.crypto.supported) {
+    if (! $crypto.browser_support.crypto.supported) {
         $ui.error('Your browser does not support encrypted echoes, try the latest Chrome/Firefox');
         $ui.log('browser not marked as supported for crypto: ' + navigator.userAgent, 0);
         return;
     }
 
     var kc = $ui.get_keychain_property(nick, 'keychain');
-    if (typeof $ec == 'undefined'
+    if (typeof $crypto == 'undefined'
         || kc == null
-        || ($ec.keychain[kc].private_key == null
+        || ($crypto.keychain[kc].private_key == null
             && $ui.get_keychain_property(nick, 'symkey') == null)) {
         $ui.error("Unable to decrypt echo from " + nick + ". No decryption key available.");
         return;
@@ -398,7 +307,7 @@ function decrypt_eecho(nick, echo) { // echo is an array of b64 encoded segments
     var c = new EchoesCrypto();
 
     $ui.add_nickname(nick);
-    c.decrypt(echo, $ec.keychain[kc].private_key, $ui.get_keychain_property(nick, 'symkey')).then(function() {
+    c.decrypt(echo, $crypto.keychain[kc].private_key, $ui.get_keychain_property(nick, 'symkey')).then(function() {
         $ui.echo(nick + ' ))) [encrypted] ' + c.decrypted_text, nick, false);
     }).catch(function(e) {
         $ui.error({ error: 'Decrypt operation fail on echo from ' + nick, debug: kc + ': ' + e.toString() });
@@ -421,6 +330,7 @@ function init_socket() {
 
     setup_callbacks();
 
+    $client.socket = socket;
     $ui.log("connecting to " + AppConfig.WS_SERVER + "?" + socket_query + " as '" + $me + "' with session_id: " + $session_id, 1);
 }
 
@@ -429,7 +339,7 @@ function setup_callbacks() {
         $me = me;
         $ui.status('Hi ' + $me + ', say something or /join a channel', $ui.ui.echoes.attr('windowname'));
 
-        execute_command(['/who']);
+        $client.execute_command(['/who']);
     });
 
     socket.on('*pm', function(nick) {
@@ -517,7 +427,7 @@ function setup_callbacks() {
 
         if (typeof data.keychain != 'undefined'
             && data.keychain == 'keyx'
-            && ! $ec.browser_support.ec.supported) {
+            && ! $crypto.browser_support.ec.supported) {
             socket.emit('!keyx_unsupported', {
                 to: data.from
             });
@@ -548,12 +458,12 @@ function setup_callbacks() {
         });
 
         if (data.keychain == 'keyx') {
-            keyx_derive_key(nick, $ec.keychain[data.keychain].private_key, $ui.get_keychain_property(nick, 'public_key'));
+            keyx_derive_key(nick, $crypto.keychain[data.keychain].private_key, $ui.get_keychain_property(nick, 'public_key'));
         }
 
         $ui.update_encrypt_state(nick);
 
-        $ui.status('Public key sent to ' + nick + ' (' + $ec.keychain[$ui.get_keychain_property(nick, 'keychain')].exported.hash + ')');
+        $ui.status('Public key sent to ' + nick + ' (' + $crypto.keychain[$ui.get_keychain_property(nick, 'keychain')].exported.hash + ')');
         $ui.log('keyx sent to: ' + nick + ': ' + JSON.stringify(data), 0);
     });
 
@@ -605,13 +515,13 @@ function setup_callbacks() {
 
     socket.on('reconnect', function() {
         $last_error = null;
-        join_channels();
+        $client.join_channels();
     });
     socket.once('connect', function() {
         $last_error = null;
         $ui.status('Connected!', null, true);
 
-        if (! $ec.browser_support.crypto.supported) {
+        if (! $crypto.browser_support.crypto.supported) {
             $ui.error('Your browser does not support encrypted echoes, try the latest Chrome/Firefox');
             $ui.log('browser not marked as supported for crypto: ' + navigator.userAgent, 0);
             return;
