@@ -90,7 +90,7 @@ $(document).ready(function() {
                 $ui.error('Not connected :(');
                 return;
             }
-            
+
             $client.send_echo();
         }
     });
@@ -113,206 +113,6 @@ $(document).ready(function() {
         }
     });
 });
-
-function keyx_derive_key(nick, private_key, public_key) {
-    if (! private_key || ! public_key) {
-        $ui.log('keyx symkey derivation skipped, pub: ' + public_key + ', priv: ' + private_key, 2);
-        return;
-    }
-
-    var c = new EchoesCrypto();
-
-    c.derive_key(private_key, public_key).then(function() {
-        $ui.set_keychain_property(nick, {
-            symkey: c.derived_key,
-        });
-
-        $ui.update_encrypt_state(nick);
-
-        $ui.status('Successfully derived symkey for ' + nick);
-        $ui.log('symkey derived for: ' + nick, 0);
-    }).catch(function(e){
-        delete $keychain[nick];
-        $ui.update_encrypt_state(nick);
-
-        $ui.error({ error: 'Failed to generate encryption key for ' + nick, debug: e.toString() });
-        $ui.log('derive: ' + e.toString(), 3);
-    });
-}
-
-function keyx_new_key(endpoint, kc) {
-    if (! $crypto.browser_support.crypto.supported) {
-        $ui.error('Your browser does not support encrypted echoes, try the latest Chrome/Firefox');
-        $ui.log('browser not marked as supported for crypto: ' + navigator.userAgent, 0);
-        return;
-    }
-
-    $ui.status('Generting new session keys...');
-    $ui.log('generating new ' + kc + ' session keypair...', 0);
-
-    $crypto.generate_key(kc).then(function() {
-        $ui.log(kc + ' keypair generated, exporting...', 0);
-        return $crypto.export_key(kc + '_public').then(function() {
-            $ui.log(kc + ' public key exported successfully', 0);
-
-            return $crypto.hash($crypto.keychain[kc].exported.public_key).then(function() {
-                $crypto.keychain[kc].exported.hash = $crypto.resulting_hash.match(/.{1,8}/g).join(' ');
-                if (typeof endpoint != 'undefined') {
-                    $ui.log('sending ' + kc + ' public key to endpoint: ' + endpoint, 0);
-                    keyx_send_key(endpoint);
-                }
-            }).catch(function(e) {
-                $ui.error('Failed to hash exported ' + kc + ' key: ' + e.toString());
-            });
-        }).catch(function(e) {
-            $ui.error('Failed to export key: ' + e.toString());
-        });
-    }).catch(function(e) {
-        $ui.error('Failed to generate keypair: ' + e.toString());
-    });
-}
-
-function keyx_send_key(endpoint) {
-    if (! $crypto.browser_support.crypto.supported) {
-        $ui.error('Your browser does not support encrypted echoes, try the latest Chrome/Firefox');
-        $ui.log('browser not marked as supported for crypto: ' + navigator.userAgent, 0);
-        return;
-    }
-
-    var kc = $ui.get_keychain_property(endpoint, 'keychain') || ($crypto.browser_support.ec.supported ? 'keyx' : 'encrypt');
-
-    if (typeof $crypto == 'undefined'
-        || $crypto.keychain[kc].public_key == null) {
-        keyx_new_key(endpoint, kc);
-        return;
-    }
-
-    $ui.set_keychain_property(endpoint, { keychain: kc });
-
-    $ui.log('found existing ' + kc + ' keypair, broadcasting...', 0);
-    socket.emit('!keyx', {
-        to: endpoint,
-        pubkey: btoa($crypto.keychain[kc].exported.public_key),
-        keychain: kc,
-    });
-}
-
-function keyx_off(endpoint, inform_endpoint) {
-    inform_endpoint = inform_endpoint || false;
-
-    delete $keychain[endpoint];
-    $ui.update_encrypt_state(endpoint);
-
-    if (inform_endpoint) {
-        socket.emit('!keyx_off', {
-            to: endpoint
-        });
-    }
-}
-
-function keyx_import(data) {
-    if (! $crypto.browser_support.crypto.supported) {
-        $ui.error('Your browser does not support encrypted echoes, try the latest Chrome/Firefox');
-        $ui.log('browser not marked as supported for crypto: ' + navigator.userAgent, 0);
-        return;
-    }
-
-    var nick = data.from;
-    var kc = data.keychain;
-    var key = atob(data.pubkey);
-    var c = new EchoesCrypto();
-
-    c.import_key(kc, key, 'spki').then(function() {
-        return c.hash(key).then(function() {
-            $ui.set_keychain_property(nick, {
-                public_key: c.keychain[kc].imported.public_key,
-                hash: c.resulting_hash.match(/.{1,8}/g).join(' '),
-                keychain: kc,
-            });
-
-            if (kc == 'keyx') {
-                keyx_derive_key(nick, $crypto.keychain[kc].private_key, $ui.get_keychain_property(nick, 'public_key'));
-            }
-
-            $ui.status('Imported ' + kc + ' public key from ' + nick + ' (' + $keychain[nick].hash + ')');
-            $ui.log(kc + ' pubkey import successful from: ' + nick + ' (' + $keychain[nick].hash + ')', 0);
-        }).catch(function(e) {
-            delete $keychain[nick];
-            $ui.update_encrypt_state(nick);
-
-            $ui.error({ error: 'Failed to import key from ' + nick, debug: kc + ': ' + e.toString() });
-            $ui.log('hash: ' + e.toString(), 3);
-        })
-    }).catch(function(e) {
-        delete $keychain[nick];
-        $ui.update_encrypt_state(nick);
-
-        $ui.error({ error: 'Failed to import key from ' + nick, debug: kc + ': ' +  e.toString() });
-        $ui.log('import key: ' + e.toString(), 3);
-    });
-}
-
-function send_encrypted_echo(nick, echo) {
-    if (! $crypto.browser_support.crypto.supported) {
-        $ui.error('Your browser does not support encrypted echoes, try the latest Chrome/Firefox');
-        $ui.log('browser not marked as supported for crypto: ' + navigator.userAgent, 0);
-        return;
-    }
-
-    if ($ui.get_keychain_property(nick, 'public_key') == null) {
-        $ui.error("You do not have a public key for " + nick + ". Initiate a key exchange first.");
-        return;
-    }
-
-    var c = new EchoesCrypto();
-    c.encrypt(echo, $keychain[nick].public_key, $ui.get_keychain_property(nick, 'symkey')).then(function() {
-        var and_echoes = false;
-
-        socket.emit('/echo', {
-            type: 'encrypted',
-            to: nick,
-            echo: c.encrypted_segments, // an array of base64 encoded segments
-        });
-
-        if ($ui.get_window(nick).length == 0) {
-            and_echoes = true;
-        }
-        $ui.echo($me + ' ))) [encrypted] ' + echo, nick, and_echoes);
-    }).catch(function(e) {
-        $ui.error({ error: 'Encrypt operation failed on echo to ' + nick, debug: e.toString() });
-    });
-}
-function decrypt_eecho(nick, echo) { // echo is an array of b64 encoded segments
-    if (! $crypto.browser_support.crypto.supported) {
-        $ui.error('Your browser does not support encrypted echoes, try the latest Chrome/Firefox');
-        $ui.log('browser not marked as supported for crypto: ' + navigator.userAgent, 0);
-        return;
-    }
-
-    var kc = $ui.get_keychain_property(nick, 'keychain');
-    if (typeof $crypto == 'undefined'
-        || kc == null
-        || ($crypto.keychain[kc].private_key == null
-            && $ui.get_keychain_property(nick, 'symkey') == null)) {
-        $ui.error("Unable to decrypt echo from " + nick + ". No decryption key available.");
-        return;
-    }
-    if (typeof echo != 'object'
-        || echo.length == 0) {
-        $ui.log('invalid encrypted echo from ' + nick + ': ' + typeof echo, 3);
-        $ui.error("Could not decrypted echo from " + nick + ". It appears invalid.");
-        return;
-    }
-
-    var c = new EchoesCrypto();
-
-    $ui.add_nickname(nick);
-    c.decrypt(echo, $crypto.keychain[kc].private_key, $ui.get_keychain_property(nick, 'symkey')).then(function() {
-        $ui.echo(nick + ' ))) [encrypted] ' + c.decrypted_text, nick, false);
-    }).catch(function(e) {
-        $ui.error({ error: 'Decrypt operation fail on echo from ' + nick, debug: kc + ': ' + e.toString() });
-    });
-}
 
 function init_socket() {
     var socket_query = encodeURI('session_id=' + $session_id + '&nickname=' + $me);
@@ -400,7 +200,7 @@ function setup_callbacks() {
     });
     socket.on('*disconnect', function(who) {
         $ui.remove_nickname(who.nickname);
-        keyx_off(who.nickname, false);
+        $client.keyx_off(who.nickname, false);
         $ui.status(who.nickname + ' disconnected!', who.nickname, true);
     });
 
@@ -408,7 +208,7 @@ function setup_callbacks() {
         switch (echo.type) {
             case 'encrypted':
                 $ui.log('eecho incoming: ' + echo.from + ': ' + JSON.stringify(echo), 0);
-                decrypt_eecho(echo.from, echo.echo);
+                $client.decrypt_encrypted_echo(echo.from, echo.echo);
             break;
 
             case 'pm':
@@ -435,11 +235,11 @@ function setup_callbacks() {
             return;
         }
 
-        keyx_import(data);
+        $client.keyx_import(data);
     });
     socket.on('*keyx_unsupported', function(data){
         $ui.log('keyx_unsupported incoming from: ' + data.from, 0);
-        keyx_off(data.from, false); // do not emit another !keyx_off
+        $client.keyx_off(data.from, false); // do not emit another !keyx_off
 
         $ui.status('Key rejected, falling back...');
 
@@ -448,7 +248,7 @@ function setup_callbacks() {
     });
     socket.on('*keyx_off', function(data){
         $ui.log('keyx_off incoming from: ' + data.from, 0);
-        keyx_off(data.from, false); // do not emit another !keyx_off
+        $client.keyx_off(data.from, false); // do not emit another !keyx_off
     });
     socket.on('*keyx_sent', function(data){
         var nick = data.to;
@@ -458,7 +258,7 @@ function setup_callbacks() {
         });
 
         if (data.keychain == 'keyx') {
-            keyx_derive_key(nick, $crypto.keychain[data.keychain].private_key, $ui.get_keychain_property(nick, 'public_key'));
+            $client.keyx_derive_key(nick, $crypto.keychain[data.keychain].private_key, $ui.get_keychain_property(nick, 'public_key'));
         }
 
         $ui.update_encrypt_state(nick);

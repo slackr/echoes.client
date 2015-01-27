@@ -436,8 +436,7 @@ EchoesUi.prototype.update_encrypt_state = function(for_window) {
  */
 EchoesUi.prototype.set_keychain_property = function(nick, props) {
     if (typeof $keychain[nick] == 'undefined') {
-        $keychain[nick] = {};
-        this.log('initialized keychain for ' + nick, 0);
+        this.init_keychain(nick);
     }
 
     for (var key in props) {
@@ -462,7 +461,7 @@ EchoesUi.prototype.get_keychain_property = function(nick, prop) {
     prop = prop || 'public_key';
 
     if (typeof $keychain[nick] == 'undefined') {
-        this.set_keychain_property(nick, {});
+        this.init_keychain(nick);
         return null;
     }
 
@@ -472,6 +471,30 @@ EchoesUi.prototype.get_keychain_property = function(nick, prop) {
 
     this.log('get prop ' + prop + ' from keychain: ' + nick + ' (' + JSON.stringify($keychain[nick][prop]) + ')', 0);
     return $keychain[nick][prop];
+}
+
+/**
+ * Initialize keychain for nickname
+ *
+ * @param   {string} nick Nickname
+ *
+ * @returns {null}
+ */
+EchoesUi.prototype.init_keychain = function(nick) {
+    $keychain[nick] = {};
+    this.log('initialized keychain for ' + nick, 0);
+}
+
+/**
+ * Wipe without initializing keychain for nickname
+ *
+ * @param   {string} nick Nickname
+ *
+ * @returns {null}
+ */
+EchoesUi.prototype.wipe_keychain = function(nick) {
+    delete $keychain[nick];
+    this.log('wiped keychain for ' + nick, 0);
 }
 
 /**

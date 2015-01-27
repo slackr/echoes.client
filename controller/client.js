@@ -84,13 +84,13 @@ EchoesClient.prototype.execute_command = function(params) {
             var nick = params[0];
             var plaintext = params[1];
 
-            send_encrypted_echo(nick, plaintext);
+            this.send_encrypted_echo(nick, plaintext);
         break;
         case '/keyx':
-            keyx_send_key(params[0]);
+            this.keyx_send_key(params[0]);
         break;
         case '/keyx_off':
-            keyx_off(params[0], true);
+            this.keyx_off(params[0], true);
         break;
         default:
             this.socket.emit(command, params);
@@ -144,5 +144,298 @@ EchoesClient.prototype.join_channels = function() {
     this.log('Auto-joining channels...', 1);
     this.ui.joined_channels().each(function() {
         self.execute_command(['/join', $(this).attr('windowname')]);
+    });
+}
+
+/**
+ * (async) Derive a symmetric key using two CryptoKey objects
+ *
+ * If either public/private key parameters are null, derivation is aborted
+ *
+ * @param   {string} nick           Which nick's keystore to use
+ * @param   {CryptoKey} private_key Object representing a private key
+ * @param   {CryptoKey} public_key  Object representing a public key
+ *
+ * @returns {null}
+ */
+EchoesClient.prototype.keyx_derive_key = function(nick, private_key, public_key) {
+    if (! private_key || ! public_key) {
+        this.ui.log('keyx symkey derivation skipped, pub: ' + public_key + ', priv: ' + private_key, 2);
+        return;
+    }
+    var self = this;
+    var c = new EchoesCrypto();
+
+    c.derive_key(private_key, public_key).then(function() {
+        self.ui.set_keychain_property(nick, {
+            symkey: c.derived_key,
+        });
+
+        self.ui.update_encrypt_state(nick);
+
+        self.ui.status('Successfully derived symkey for ' + nick);
+        self.log('symkey derived for: ' + nick, 0);
+    }).catch(function(e){
+        self.ui.wipe_keychain(nick);
+        self.ui.update_encrypt_state(nick);
+
+        self.ui.error({ error: 'Failed to generate encryption key for ' + nick, debug: e.toString() });
+        self.log('derive: ' + e.toString(), 3);
+    });
+}
+
+/**
+ * (async) Decrypt incoming eecho
+ *
+ * @param   {string} nick   Nickname that sent the echo
+ * @param   {Array} echo    Array of encrypted segments
+ *
+ * @returns {null}
+ */
+EchoesClient.prototype.decrypt_encrypted_echo = function(nick, echo) { // echo is an array of b64 encoded segments
+    if (! this.crypto.browser_support.crypto.supported) {
+        this.ui.error('Your browser does not support encrypted echoes, try the latest Chrome/Firefox');
+        this.log('browser not marked as supported for crypto: ' + navigator.userAgent, 0);
+        return;
+    }
+
+    var kc = this.ui.get_keychain_property(nick, 'keychain');
+    if (typeof this.crypto == 'undefined'
+        || kc == null
+        || (this.crypto.keychain[kc].private_key == null
+            && this.ui.get_keychain_property(nick, 'symkey') == null)) {
+        this.ui.error("Unable to decrypt echo from " + nick + ". No decryption key available.");
+        return;
+    }
+    if (typeof echo != 'object'
+        || echo.length == 0) {
+        this.ui.log('invalid encrypted echo from ' + nick + ': ' + typeof echo, 3);
+        this.ui.error("Could not decrypt echo from " + nick + ". It appears invalid.");
+        return;
+    }
+
+    var self = this;
+    var c = new EchoesCrypto();
+
+    this.ui.add_nickname(nick);
+    c.decrypt(echo, this.crypto.keychain[kc].private_key, this.ui.get_keychain_property(nick, 'symkey')).then(function() {
+        self.ui.echo(nick + ' ))) [encrypted] ' + c.decrypted_text, nick, false);
+    }).catch(function(e) {
+        self.ui.error({ error: 'Decrypt operation failed on echo from ' + nick, debug: kc + ': ' + e.toString() });
+    });
+}
+
+/**
+ * (async) Encrypt and send echo to a nickname
+ *
+ * '/echo' is emitted to server bypassing execute_command
+ * emit data = { type: 'encrypted', to: 'nick', echo: 'array of segments' }
+ *
+ * @param   {string} nick   Nickname to send eecho to
+ * @param   {string} echo   Text to encrypt and send
+ *
+ * @returns {null}
+ */
+EchoesClient.prototype.send_encrypted_echo = function(nick, echo) {
+    if (! this.crypto.browser_support.crypto.supported) {
+        this.ui.error('Your browser does not support encrypted echoes, try the latest Chrome/Firefox');
+        this.log('browser not marked as supported for crypto: ' + navigator.userAgent, 0);
+        return;
+    }
+
+    if (this.ui.get_keychain_property(nick, 'public_key') == null
+        && this.ui.get_keychain_property(nick, 'symkey') ==  null) {
+        this.ui.error("You do not have a decryption key for " + nick + ". Initiate a key exchange first.");
+        this.log('no encryption key found in keychain: ' + nick, 3);
+        return;
+    }
+
+    var self = this;
+    var c = new EchoesCrypto();
+
+    c.encrypt(echo, this.ui.get_keychain_property(nick, 'public_key'), this.ui.get_keychain_property(nick, 'symkey')).then(function() {
+        var and_echoes = false;
+
+        self.socket.emit('/echo', { // bypass execute_command for encrypted echoes, we'll write it on wall manually below
+            type: 'encrypted',
+            to: nick,
+            echo: c.encrypted_segments, // an array of base64 encoded segments
+        });
+
+        if (self.ui.get_window(nick).length == 0) {
+            and_echoes = true;
+        }
+        self.ui.echo($me + ' ))) [encrypted] ' + echo, nick, and_echoes);
+    }).catch(function(e) {
+        self.ui.error({ error: 'Encrypt operation failed on echo to ' + nick, debug: e.toString() });
+    });
+}
+
+/**
+ * Turn off encryption for an endpoint
+ *
+ * Will wipe keychain and inform endpoint encryption has been turned off if second param is true
+ *
+ * !keyx_off is emitted to server IF second param is true, using { to: 'nick' }
+ *
+ * @param   {string} function       Endpoint to turn off encryption/keyx on
+ * @param   {bool} inform_endpoint  (default='false') Send a keyx_off message to server to inform endpoint?
+ *
+ * @returns {null}
+ */
+EchoesClient.prototype.keyx_off = function(endpoint, inform_endpoint) {
+    inform_endpoint = inform_endpoint || false;
+
+    $ui.wipe_keychain(endpoint);
+    $ui.update_encrypt_state(endpoint);
+
+    if (inform_endpoint) {
+        this.socket.emit('!keyx_off', {
+            to: endpoint
+        });
+    }
+}
+
+/**
+ * (async) Import keyx data from server
+ *
+ * Marked as async because key derivation for keyx is asynchronous (i should fix this)
+ * Right now this function assumes it's public and will use 'spki' as the type
+ *
+ * data = { from: 'nick', keychain: 'keyx|encrypt', pubkey: 'base64 encoded PEM pubkey' }
+ *
+ * @param   {object} data Object of keyx data to process
+ *
+ * @returns {null}
+ */
+EchoesClient.prototype.keyx_import = function(data) {
+    if (! this.crypto.browser_support.crypto.supported) {
+        this.ui.error('Your browser does not support encrypted echoes, try the latest Chrome/Firefox');
+        this.log('browser not marked as supported for crypto: ' + navigator.userAgent, 0);
+        return;
+    }
+
+    var self = this;
+    var nick = data.from;
+    var kc = data.keychain;
+    var key = atob(data.pubkey);
+    var c = new EchoesCrypto();
+
+    c.import_key(kc, key, 'spki').then(function() {
+        return c.hash(key).then(function() {
+            self.ui.set_keychain_property(nick, {
+                public_key: c.keychain[kc].imported.public_key,
+                hash: c.resulting_hash.match(/.{1,8}/g).join(' '),
+                keychain: kc,
+            });
+
+            if (kc == 'keyx') {
+                self.keyx_derive_key(nick, self.crypto.keychain[kc].private_key, self.ui.get_keychain_property(nick, 'public_key'));
+            }
+
+            self.ui.status('Imported ' + kc + ' public key from ' + nick + ' (' + $keychain[nick].hash + ')');
+            self.log(kc + ' pubkey import successful from: ' + nick + ' (' + $keychain[nick].hash + ')', 0);
+        }).catch(function(e) {
+            self.ui.wipe_keychain(nick);
+            self.ui.update_encrypt_state(nick);
+
+            self.ui.error({ error: 'Failed to import key from ' + nick, debug: kc + ': ' + e.toString() });
+            self.log('hash: ' + e.toString(), 3);
+        })
+    }).catch(function(e) {
+        self.ui.wipe_keychain(nick);
+        self.ui.update_encrypt_state(nick);
+
+        self.ui.error({ error: 'Failed to import key from ' + nick, debug: kc + ': ' +  e.toString() });
+        self.log('import key: ' + e.toString(), 3);
+    });
+}
+
+/**
+ * (async) Generate a new keypair before key exchange
+ *
+ * If 'endpoint' is not null/undefined, the exported pubkey will be sent
+ * If kc is not specified 'encrypt' is used
+ *
+ * @param   {string} endpoint (optional) Who to send key to
+ * @param   {string} kc       (default='encrypt') Which keychain to use
+ *
+ * @returns {null}
+ */
+EchoesClient.prototype.keyx_new_key = function(endpoint, kc) {
+    kc = kc || 'encrypt';
+
+    if (! this.crypto.browser_support.crypto.supported) {
+        this.ui.error('Your browser does not support encrypted echoes, try the latest Chrome/Firefox');
+        this.log('browser not marked as supported for crypto: ' + navigator.userAgent, 0);
+        return;
+    }
+
+    this.ui.status('Generting new ' + kc + ' session keys...');
+    this.log('generating new ' + kc + ' session keypair...', 0);
+
+    var self = this;
+    this.crypto.generate_key(kc).then(function() {
+        self.log(kc + ' keypair generated, exporting...', 0);
+        return self.crypto.export_key(kc + '_public').then(function() {
+            self.log(kc + ' public key exported successfully', 0);
+
+            return self.crypto.hash(self.crypto.keychain[kc].exported.public_key).then(function() {
+                self.crypto.keychain[kc].exported.hash = self.crypto.resulting_hash.match(/.{1,8}/g).join(' ');
+                if (typeof endpoint != 'undefined'
+                    && endpoint != null) {
+                    self.log('sending ' + kc + ' public key to endpoint: ' + endpoint, 0);
+                    self.keyx_send_key(endpoint);
+                }
+            }).catch(function(e) {
+                self.ui.error('Failed to hash exported ' + kc + ' key: ' + e.toString());
+            });
+        }).catch(function(e) {
+            self.ui.error('Failed to export key: ' + e.toString());
+        });
+    }).catch(function(e) {
+        self.ui.error('Failed to generate keypair: ' + e.toString());
+    });
+}
+
+/**
+ * Send an exported public key to an endpoint
+ *
+ * If the client doesn't currently have a public key for the specified keychain, keyx_new_key is called first
+ *
+ * If browser supports elliptic curve, the 'keyx' keychain is used, else use 'encrypt'
+ * If the endpoint already specified a supported keychain, use that instead
+ *
+ * !keyx is emitted to socket using { to: 'nick', pubkey: 'base64 encoded PEM formatted pubkey', keychain: 'keyx|encrypt' }
+ *
+ * @see EchoesClient#keyx_new_key
+ * @see EchoesCrypto#browser_support
+ *
+ * @param   {string} endpoint Endpoint to send key to
+ *
+ * @returns {null}
+ */
+EchoesClient.prototype.keyx_send_key = function(endpoint) {
+    if (! this.crypto.browser_support.crypto.supported) {
+        this.ui.error('Your browser does not support encrypted echoes, try the latest Chrome/Firefox');
+        this.log('browser not marked as supported for crypto: ' + navigator.userAgent, 0);
+        return;
+    }
+
+    var kc = this.ui.get_keychain_property(endpoint, 'keychain') || (this.crypto.browser_support.ec.supported ? 'keyx' : 'encrypt');
+
+    if (typeof this.crypto == 'undefined'
+        || this.crypto.keychain[kc].public_key == null) {
+        this.keyx_new_key(endpoint, kc);
+        return;
+    }
+
+    this.ui.set_keychain_property(endpoint, { keychain: kc });
+
+    this.log('found existing ' + kc + ' keypair, broadcasting...', 0);
+    this.socket.emit('!keyx', {
+        to: endpoint,
+        pubkey: btoa(this.crypto.keychain[kc].exported.public_key),
+        keychain: kc,
     });
 }
