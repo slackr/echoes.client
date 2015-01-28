@@ -7,7 +7,6 @@
 
 /**
  * UI controller that handles CRUD operations on UI elements
- * Session keychain is also managed here
  *
  * @class
  * @extends EchoesObject
@@ -40,7 +39,8 @@ function EchoesUi() {
             close_lists: $('#close_lists'),
             nicknames: $('#nicknames'),
             channels: $('#channels'),
-        }
+        },
+        show_window_callback: null, // function to call after show_window()
     }
 
     this.attach_events();
@@ -89,6 +89,10 @@ EchoesUi.prototype.attach_events = function() {
         self.add_window(nick, 'nickname');
         self.show_window(nick);
         self.ui.lists.close_lists.click();
+
+        if (typeof  self.ui.show_window_callback == 'function') {
+            self.ui.show_window_callback(nick);
+        }
     });
 
     this.show_window(this.ui.echoes.attr('windowname'));
@@ -386,118 +390,6 @@ EchoesUi.prototype.get_window_state = function(on_window) {
 }
 
 /**
- * Determines the encryption state for a window and sets the window state accordingly
- *
- * Changes the icon to the matching encryption state asset
- *
- * @see EchoesUi#set_window_state
- *
- * @param   {string} for_window Window name
- *
- * @returns {null}
- */
-EchoesUi.prototype.update_encrypt_state = function(for_window) {
-    var sent_decrypt_key = (this.get_keychain_property(for_window, 'keysent') == true ? true : false);
-    var received_encrypt_key = (this.get_keychain_property(for_window, 'public_key') != null ? true : false);
-
-    var state = 'unencrypted';
-    if (received_encrypt_key && sent_decrypt_key) {
-        state = 'encrypted';
-    } else if (received_encrypt_key && ! sent_decrypt_key) {
-        state = 'oneway';
-    }
-
-    this.set_window_state(state, for_window);
-
-    if (for_window == this.active_window().attr('windowname')) {
-        this.log('setting active window icon to ' + state, 0);
-        for (var icon in this.assets.encrypt) {
-            this.assets.encrypt[icon].hide();
-        }
-        this.assets.encrypt[state].show();
-    }
-
-    this.log('window ' + for_window + ' set to ' + state + ' s:' + sent_decrypt_key + ' r:' + received_encrypt_key);
-}
-
-/**
- * Sets a $keychain property for a nick and initializes if chain is not defined yet
- *
- * Also updates the encryption state for windowname='nick'
- *
- * props = { public_key: '', symkey: '', keysent: true, ... }
- *
- * @see EchoesUi#update_encrypt_state
- *
- * @param   {string} nick     Nickname to set property on
- * @param   {object} props    Set of properties to apply to keychain for nick
- *
- * @returns {null}
- */
-EchoesUi.prototype.set_keychain_property = function(nick, props) {
-    if (typeof $keychain[nick] == 'undefined') {
-        this.init_keychain(nick);
-    }
-
-    for (var key in props) {
-        $keychain[nick][key] = props[key];
-    }
-
-    this.update_encrypt_state(nick);
-    this.log('set prop ' + JSON.stringify(props) + ' on keychain: ' + nick, 0);
-}
-
-/**
- * Get a property value from a nick's $keychain
- *
- * Default prop = 'public_key'
- *
- * @param   {string} nick     Nickname to get property from
- * @param   {string} prop     (default='public_key') Property to retrieve
- *
- * @returns {null|string} Return property value or null
- */
-EchoesUi.prototype.get_keychain_property = function(nick, prop) {
-    prop = prop || 'public_key';
-
-    if (typeof $keychain[nick] == 'undefined') {
-        this.init_keychain(nick);
-        return null;
-    }
-
-    if (typeof $keychain[nick][prop] == 'undefined') {
-        return null;
-    }
-
-    this.log('get prop ' + prop + ' from keychain: ' + nick + ' (' + JSON.stringify($keychain[nick][prop]) + ')', 0);
-    return $keychain[nick][prop];
-}
-
-/**
- * Initialize keychain for nickname
- *
- * @param   {string} nick Nickname
- *
- * @returns {null}
- */
-EchoesUi.prototype.init_keychain = function(nick) {
-    $keychain[nick] = {};
-    this.log('initialized keychain for ' + nick, 0);
-}
-
-/**
- * Wipe without initializing keychain for nickname
- *
- * @param   {string} nick Nickname
- *
- * @returns {null}
- */
-EchoesUi.prototype.wipe_keychain = function(nick) {
-    delete $keychain[nick];
-    this.log('wiped keychain for ' + nick, 0);
-}
-
-/**
  * Shows a window on the wall and hides all others
  * Also sets the CSS ui selected window property in the nickname/channel list
  * Also calls EchoesUi#scroll_down and focuses the input echo_input
@@ -581,7 +473,6 @@ EchoesUi.prototype.hide_me = function() {
 EchoesUi.prototype.toggle_encrypt_icon = function(on_off) {
     var padding = '30px';
     if (on_off) {
-        this.update_encrypt_state(this.active_window().attr('windowname'));
         this.ui.buttons.encrypt.fadeIn('fast');
         this.ui.input.css('padding-left', padding);
     } else {

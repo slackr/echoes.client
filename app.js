@@ -42,11 +42,6 @@ var $session_id = null;
 var $last_error = null;
 
 /**
- * @type Object A hash of nicknames and their imported keys/symkeys
- */
-var $keychain = {};
-
-/**
  * @type Socket Socket.io main global object
  */
 var socket = null;
@@ -112,6 +107,17 @@ $(document).ready(function() {
             break;
         }
     });
+
+    /**
+     * Set the callback for show_window() to update encryption state
+     *
+     * @param   {string} w  Windowname to update encryption state on
+     *
+     * @returns {null}
+     */
+    $ui.ui.show_window_callback = function(w) {
+        $client.update_encrypt_state(w);
+    }
 });
 
 function init_socket() {
@@ -243,8 +249,8 @@ function setup_callbacks() {
 
         $ui.status('Key rejected, falling back...');
 
-        $ui.set_keychain_property(data.from, { keychain: 'encrypt' });
-        keyx_send_key(data.from);
+        $client.set_nickchain_property(data.from, { keychain: 'encrypt' });
+        $client.keyx_send_key(data.from);
     });
     socket.on('*keyx_off', function(data){
         $ui.log('keyx_off incoming from: ' + data.from, 0);
@@ -253,17 +259,17 @@ function setup_callbacks() {
     socket.on('*keyx_sent', function(data){
         var nick = data.to;
 
-        $ui.set_keychain_property(nick, {
+        $client.set_nickchain_property(nick, {
             keysent: true,
         });
 
         if (data.keychain == 'keyx') {
-            $client.keyx_derive_key(nick, $crypto.keychain[data.keychain].private_key, $ui.get_keychain_property(nick, 'public_key'));
+            $client.keyx_derive_key(nick, $crypto.keychain[data.keychain].private_key, $client.get_nickchain_property(nick, 'public_key'));
         }
 
-        $ui.update_encrypt_state(nick);
+        $client.update_encrypt_state(nick);
 
-        $ui.status('Public key sent to ' + nick + ' (' + $crypto.keychain[$ui.get_keychain_property(nick, 'keychain')].exported.hash + ')');
+        $ui.status('Public key sent to ' + nick + ' (' + $crypto.keychain[$client.get_nickchain_property(nick, 'keychain')].exported.hash + ')');
         $ui.log('keyx sent to: ' + nick + ': ' + JSON.stringify(data), 0);
     });
 
@@ -329,9 +335,9 @@ function setup_callbacks() {
 
     });
     socket.on('disconnect', function() {
-        $keychain = {}; // bye bye nick keys
+        $client.wipe_nickchain(); // bye bye nick keys
         $ui.log('session keychain wiped on disconnect', 1);
-        $ui.update_encrypt_state($ui.active_window().attr('windowname'));
+        $client.update_encrypt_state($ui.active_window().attr('windowname'));
 
         $ui.status('Disconnected :(', null, true);
     });

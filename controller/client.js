@@ -17,6 +17,13 @@ function EchoesClient(socket, ui, crypto) {
     this.socket = socket; // socket.io object ref
     this.ui = ui; // ui object ref
     this.crypto = crypto; // crypto object ref
+
+
+    /**
+     * @type Object A hash of nicknames and their imported keys/symkeys and keysent status
+     */
+    this.nickchain = {};
+
 }
 EchoesClient.prototype = Object.create(EchoesObject.prototype);
 EchoesClient.prototype.constructor = EchoesClient;
@@ -167,17 +174,17 @@ EchoesClient.prototype.keyx_derive_key = function(nick, private_key, public_key)
     var c = new EchoesCrypto();
 
     c.derive_key(private_key, public_key).then(function() {
-        self.ui.set_keychain_property(nick, {
+        self.set_nickchain_property(nick, {
             symkey: c.derived_key,
         });
 
-        self.ui.update_encrypt_state(nick);
+        self.update_encrypt_state(nick);
 
         self.ui.status('Successfully derived symkey for ' + nick);
         self.log('symkey derived for: ' + nick, 0);
     }).catch(function(e){
-        self.ui.wipe_keychain(nick);
-        self.ui.update_encrypt_state(nick);
+        self.wipe_nickchain(nick);
+        self.update_encrypt_state(nick);
 
         self.ui.error({ error: 'Failed to generate encryption key for ' + nick, debug: e.toString() });
         self.log('derive: ' + e.toString(), 3);
@@ -199,11 +206,11 @@ EchoesClient.prototype.decrypt_encrypted_echo = function(nick, echo) { // echo i
         return;
     }
 
-    var kc = this.ui.get_keychain_property(nick, 'keychain');
+    var kc = this.get_nickchain_property(nick, 'keychain');
     if (typeof this.crypto == 'undefined'
         || kc == null
         || (this.crypto.keychain[kc].private_key == null
-            && this.ui.get_keychain_property(nick, 'symkey') == null)) {
+            && this.get_nickchain_property(nick, 'symkey') == null)) {
         this.ui.error("Unable to decrypt echo from " + nick + ". No decryption key available.");
         return;
     }
@@ -218,7 +225,7 @@ EchoesClient.prototype.decrypt_encrypted_echo = function(nick, echo) { // echo i
     var c = new EchoesCrypto();
 
     this.ui.add_nickname(nick);
-    c.decrypt(echo, this.crypto.keychain[kc].private_key, this.ui.get_keychain_property(nick, 'symkey')).then(function() {
+    c.decrypt(echo, this.crypto.keychain[kc].private_key, this.get_nickchain_property(nick, 'symkey')).then(function() {
         self.ui.echo(nick + ' ))) [encrypted] ' + c.decrypted_text, nick, false);
     }).catch(function(e) {
         self.ui.error({ error: 'Decrypt operation failed on echo from ' + nick, debug: kc + ': ' + e.toString() });
@@ -243,17 +250,17 @@ EchoesClient.prototype.send_encrypted_echo = function(nick, echo) {
         return;
     }
 
-    if (this.ui.get_keychain_property(nick, 'public_key') == null
-        && this.ui.get_keychain_property(nick, 'symkey') ==  null) {
+    if (this.get_nickchain_property(nick, 'public_key') == null
+        && this.get_nickchain_property(nick, 'symkey') ==  null) {
         this.ui.error("You do not have a decryption key for " + nick + ". Initiate a key exchange first.");
-        this.log('no encryption key found in keychain: ' + nick, 3);
+        this.log('no encryption key found in nickchain: ' + nick, 3);
         return;
     }
 
     var self = this;
     var c = new EchoesCrypto();
 
-    c.encrypt(echo, this.ui.get_keychain_property(nick, 'public_key'), this.ui.get_keychain_property(nick, 'symkey')).then(function() {
+    c.encrypt(echo, this.get_nickchain_property(nick, 'public_key'), this.get_nickchain_property(nick, 'symkey')).then(function() {
         var and_echoes = false;
 
         self.socket.emit('/echo', { // bypass execute_command for encrypted echoes, we'll write it on wall manually below
@@ -274,7 +281,7 @@ EchoesClient.prototype.send_encrypted_echo = function(nick, echo) {
 /**
  * Turn off encryption for an endpoint
  *
- * Will wipe keychain and inform endpoint encryption has been turned off if second param is true
+ * Will wipe nickchain and inform endpoint encryption has been turned off if second param is true
  *
  * !keyx_off is emitted to server IF second param is true, using { to: 'nick' }
  *
@@ -286,8 +293,8 @@ EchoesClient.prototype.send_encrypted_echo = function(nick, echo) {
 EchoesClient.prototype.keyx_off = function(endpoint, inform_endpoint) {
     inform_endpoint = inform_endpoint || false;
 
-    $ui.wipe_keychain(endpoint);
-    $ui.update_encrypt_state(endpoint);
+    this.wipe_nickchain(endpoint);
+    this.update_encrypt_state(endpoint);
 
     if (inform_endpoint) {
         this.socket.emit('!keyx_off', {
@@ -323,28 +330,28 @@ EchoesClient.prototype.keyx_import = function(data) {
 
     c.import_key(kc, key, 'spki').then(function() {
         return c.hash(key).then(function() {
-            self.ui.set_keychain_property(nick, {
+            self.set_nickchain_property(nick, {
                 public_key: c.keychain[kc].imported.public_key,
                 hash: c.resulting_hash.match(/.{1,8}/g).join(' '),
                 keychain: kc,
             });
 
             if (kc == 'keyx') {
-                self.keyx_derive_key(nick, self.crypto.keychain[kc].private_key, self.ui.get_keychain_property(nick, 'public_key'));
+                self.keyx_derive_key(nick, self.crypto.keychain[kc].private_key, self.get_nickchain_property(nick, 'public_key'));
             }
 
-            self.ui.status('Imported ' + kc + ' public key from ' + nick + ' (' + $keychain[nick].hash + ')');
-            self.log(kc + ' pubkey import successful from: ' + nick + ' (' + $keychain[nick].hash + ')', 0);
+            self.ui.status('Imported ' + kc + ' public key from ' + nick + ' (' + self.get_nickchain_property(nick, 'hash') + ')');
+            self.log(kc + ' pubkey import successful from: ' + nick + ' (' + self.get_nickchain_property(nick, 'hash') + ')', 0);
         }).catch(function(e) {
-            self.ui.wipe_keychain(nick);
-            self.ui.update_encrypt_state(nick);
+            self.wipe_nickchain(nick);
+            self.update_encrypt_state(nick);
 
             self.ui.error({ error: 'Failed to import key from ' + nick, debug: kc + ': ' + e.toString() });
             self.log('hash: ' + e.toString(), 3);
         })
     }).catch(function(e) {
-        self.ui.wipe_keychain(nick);
-        self.ui.update_encrypt_state(nick);
+        self.wipe_nickchain(nick);
+        self.update_encrypt_state(nick);
 
         self.ui.error({ error: 'Failed to import key from ' + nick, debug: kc + ': ' +  e.toString() });
         self.log('import key: ' + e.toString(), 3);
@@ -422,7 +429,7 @@ EchoesClient.prototype.keyx_send_key = function(endpoint) {
         return;
     }
 
-    var kc = this.ui.get_keychain_property(endpoint, 'keychain') || (this.crypto.browser_support.ec.supported ? 'keyx' : 'encrypt');
+    var kc = this.get_nickchain_property(endpoint, 'keychain') || (this.crypto.browser_support.ec.supported ? 'keyx' : 'encrypt');
 
     if (typeof this.crypto == 'undefined'
         || this.crypto.keychain[kc].public_key == null) {
@@ -430,7 +437,7 @@ EchoesClient.prototype.keyx_send_key = function(endpoint) {
         return;
     }
 
-    this.ui.set_keychain_property(endpoint, { keychain: kc });
+    this.set_nickchain_property(endpoint, { keychain: kc });
 
     this.log('found existing ' + kc + ' keypair, broadcasting...', 0);
     this.socket.emit('!keyx', {
@@ -438,4 +445,116 @@ EchoesClient.prototype.keyx_send_key = function(endpoint) {
         pubkey: btoa(this.crypto.keychain[kc].exported.public_key),
         keychain: kc,
     });
+}
+
+/**
+ * Determines the encryption state for a window and sets the window state accordingly
+ *
+ * Changes the icon to the matching encryption state asset
+ *
+ * @see EchoesUi#set_window_state
+ *
+ * @param   {string} for_window Window name
+ *
+ * @returns {null}
+ */
+EchoesClient.prototype.update_encrypt_state = function(for_window) {
+    var sent_decrypt_key = (this.get_nickchain_property(for_window, 'keysent') == true ? true : false);
+    var received_encrypt_key = (this.get_nickchain_property(for_window, 'public_key') != null ? true : false);
+
+    var state = 'unencrypted';
+    if (received_encrypt_key && sent_decrypt_key) {
+        state = 'encrypted';
+    } else if (received_encrypt_key && ! sent_decrypt_key) {
+        state = 'oneway';
+    }
+
+    this.ui.set_window_state(state, for_window);
+
+    if (for_window == this.ui.active_window().attr('windowname')) {
+        this.log('setting active window icon to ' + state, 0);
+        for (var icon in this.ui.assets.encrypt) {
+            this.ui.assets.encrypt[icon].hide();
+        }
+        this.ui.assets.encrypt[state].show();
+    }
+
+    this.log('window ' + for_window + ' set to ' + state + ' s:' + sent_decrypt_key + ' r:' + received_encrypt_key);
+}
+
+/**
+ * Sets a this.nickchain property for a nick and initializes if chain is not defined yet
+ *
+ * Also updates the encryption state for windowname='nick'
+ *
+ * props = { public_key: '', symkey: '', keysent: true, ... }
+ *
+ * @see EchoesClient#pt_state
+ *
+ * @param   {string} nick     Nickname to set property on
+ * @param   {object} props    Set of properties to apply to nickchain for nick
+ *
+ * @returns {null}
+ */
+EchoesClient.prototype.set_nickchain_property = function(nick, props) {
+    if (typeof this.nickchain[nick] == 'undefined') {
+        this.init_nickchain(nick);
+    }
+
+    for (var key in props) {
+        this.nickchain[nick][key] = props[key];
+    }
+
+    this.update_encrypt_state(nick);
+    this.log('set prop ' + JSON.stringify(props) + ' on nickchain: ' + nick, 0);
+}
+
+/**
+ * Get a property value from a nick's this.nickchain
+ *
+ * Default prop = 'public_key'
+ *
+ * @param   {string} nick     Nickname to get property from
+ * @param   {string} prop     (default='public_key') Property to retrieve
+ *
+ * @returns {null|string} Return property value or null
+ */
+EchoesClient.prototype.get_nickchain_property = function(nick, prop) {
+    prop = prop || 'public_key';
+
+    if (typeof this.nickchain[nick] == 'undefined') {
+        this.init_nickchain(nick);
+        return null;
+    }
+
+    if (typeof this.nickchain[nick][prop] == 'undefined') {
+        return null;
+    }
+
+    this.log('get prop ' + prop + ' from keychain: ' + nick + ' (' + JSON.stringify(this.nickchain[nick][prop]) + ')', 0);
+    return this.nickchain[nick][prop];
+}
+
+/**
+ * Initialize nickchain for nickname
+ *
+ * @param   {string} nick Nickname
+ *
+ * @returns {null}
+ */
+EchoesClient.prototype.init_nickchain = function(nick) {
+    this.nickchain[nick] = {};
+    this.log('initialized nickchain for ' + nick, 0);
+}
+
+/**
+ * Wipe without initializing nickchain for nickname
+ *
+ * @param   {string} nick Nickname
+ *
+ * @returns {null}
+ */
+EchoesClient.prototype.wipe_nickchain = function(nick) {
+    delete this.nickchain[nick];
+    this.log('wiped nickchain for ' + nick, 0);
 }
