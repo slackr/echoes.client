@@ -63,6 +63,11 @@ EchoesSocket.prototype.initialize = function() {
     this.log("connecting to " + AppConfig.WS_SERVER + "?" + socket_query + " as '" + this.me + "' with session_id: " + this.session_id, 1);
 }
 
+/**
+ * Attaches socket events to this.socket
+ *
+ * @returns {null}
+ */
 EchoesSocket.prototype.attach_socket_events = function() {
     var self = this;
 
@@ -267,4 +272,3 @@ EchoesSocket.prototype.attach_socket_events = function() {
         self.ui.status('Disconnected :(', null, true);
     });
 }
-
