@@ -11,13 +11,12 @@
  * @class
  * @extends EchoesObject
  */
-function EchoesClient(socket, ui, crypto) {
+function EchoesClient() {
     EchoesObject.call(this, 'socket');
 
-    this.socket = socket; // socket.io object ref
-    this.ui = ui; // ui object ref
-    this.crypto = crypto; // crypto object ref
-
+    this.socket = null; // socket.io object ref
+    this.ui = null; // ui object ref
+    this.crypto = null; // crypto object ref
 
     /**
      * @type Object A hash of nicknames and their imported keys/symkeys and keysent status
