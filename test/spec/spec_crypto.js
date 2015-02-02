@@ -8,7 +8,7 @@ describe("EchoesCrypto", function() {
     /**
      * Test synchronous functions
      */
-    describe("Synchronous functions", function() {
+    describe("Synchronous methods", function() {
         it("should support 'crypto' and 'ec' features", function() {
             c.does_browser_support('crypto');
             c.does_browser_support('ec');
@@ -44,14 +44,65 @@ describe("EchoesCrypto", function() {
             expect(c.bytes_to_hex(buffer)).toEqual(expected_hex);
         });
     });
-    /**
-     * Loop test keychains
-     */
-    var test_genkey = function(kc) {
-        it("should generate a public and private keypair for '" + kc + "'", function(done) {
+
+    describe("Asynchronous methods", function() {
+        /**
+         * Loop test keychains
+         */
+        var test_genkey = function(kc) {
+            it("should generate a public and private keypair for '" + kc + "'", function(done) {
+                var resolved = function(r) {
+                    expect(c.keychain[kc].private_key).not.toBe(null);
+                    expect(c.keychain[kc].public_key).not.toBe(null);
+                    done();
+                };
+                var rejected = function(e) {
+                    expect(e).toBeUndefined();
+                    done();
+                };
+
+                c.generate_key(kc, true)
+                    .then(resolved)
+                    .catch(rejected);
+            });
+        }
+
+        var test_exportkey = function(kc) {
+            it("should export public key from keychain '" + kc + "'", function(done) {
+                var resolved = function(r) {
+                    expect(c.keychain[kc].exported.public_key).not.toBe(null);
+                    done();
+                };
+                var rejected = function(e) {
+                    expect(e).toBeUndefined();
+                    done();
+                };
+
+                c.export_key(kc + '_public', 'spki')
+                    .then(resolved)
+                    .catch(rejected);
+            });
+        }
+
+        for (var i in test_keychains) {
+            var kc = test_keychains[i];
+
+            test_genkey(kc);
+        }
+        for (var i in test_keychains) {
+            var kc = test_keychains[i];
+
+            test_exportkey(kc);
+        }
+
+        /**
+         * Hash test
+         */
+        var hash_test = { value: 'test', expected: 'a94a8fe5ccb19ba61c4c0873d391e987982fbbd3'}
+        it("should hash '" + hash_test.value + "' -> '" + hash_test.expected + "'", function(done) {
             var resolved = function(r) {
-                expect(c.keychain[kc].private_key).not.toBe(null);
-                expect(c.keychain[kc].public_key).not.toBe(null);
+                expect(c.resulting_hash).toEqual(hash_test.expected);
+                c.log('resulting hash: ' + c.resulting_hash, 1);
                 done();
             };
             var rejected = function(e) {
@@ -59,16 +110,18 @@ describe("EchoesCrypto", function() {
                 done();
             };
 
-            c.generate_key(kc, true)
+            c.hash(hash_test.value)
                 .then(resolved)
                 .catch(rejected);
         });
-    }
 
-    var test_exportkey = function(kc) {
-        it("should export public key from keychain '" + kc + "'", function(done) {
+        /**
+         * Re-import previously exported keyx pubkey
+         */
+        it("should import a previously exported keyx key", function(done) {
             var resolved = function(r) {
-                expect(c.keychain[kc].exported.public_key).not.toBe(null);
+                expect(c.keychain['keyx'].imported.public_key).not.toBe(null);
+                c.log('imported key: ' + c.keychain['keyx'].imported.public_key, 1);
                 done();
             };
             var rejected = function(e) {
@@ -76,80 +129,65 @@ describe("EchoesCrypto", function() {
                 done();
             };
 
-            c.export_key(kc + '_public', 'spki')
+            c.import_key('keyx', c.keychain['keyx'].exported.public_key, 'spki', true)
                 .then(resolved)
                 .catch(rejected);
         });
-    }
 
-    for (var i in test_keychains) {
-        var kc = test_keychains[i];
+        /**
+         * Derive symkey from re-imported keyx pubkey and existing keyx privkey
+         */
+        it("should derive a symkey from re-imported pubkey and privkey from keychain keyx", function(done) {
+            var resolved = function(r) {
+                expect(c.derived_key).not.toBe(null);
+                c.log('derived key: ' + c.derived_key, 1);
+                done();
+            };
+            var rejected = function(e) {
+                expect(e).toBeUndefined();
+                done();
+            };
 
-        test_genkey(kc);
-    }
-    for (var i in test_keychains) {
-        var kc = test_keychains[i];
+            c.derive_key(c.keychain['keyx'].private_key, c.keychain['keyx'].imported.public_key, true)
+                .then(resolved)
+                .catch(rejected);
+        });
 
-        test_exportkey(kc);
-    }
+        /**
+         * Encrypt and decrypt with the symmetric key derived earlier
+         */
+        var plaintext = "test ☃❄❅❆★☆✪✫✯⚝⚫⚹✵❉❋";
+        it("should encrypt plaintext using derived symkey", function(done) {
+            var resolved = function(r) {
+                expect(c.encrypted_segments.length).toBeGreaterThan(2); // 3: 0=iv, 1=aad, 2+=ciphertext
+                c.log('encrypted segments: ' + c.encrypted_segments, 1);
+                done();
+            };
+            var rejected = function(e) {
+                expect(e).toBeUndefined();
+                done();
+            };
 
-    /**
-     * Hash test
-     */
-    var hash_test = { value: 'test', expected: 'a94a8fe5ccb19ba61c4c0873d391e987982fbbd3'}
-    it("should hash '" + hash_test.value + "' -> '" + hash_test.expected + "'", function(done) {
-        var resolved = function(r) {
-            expect(c.resulting_hash).toEqual(hash_test.expected);
-            c.log('resulting hash: ' + c.resulting_hash, 1);
-            done();
-        };
-        var rejected = function(e) {
-            expect(e).toBeUndefined();
-            done();
-        };
+            c.encrypt_sym(plaintext, c.derived_key)
+                .then(resolved)
+                .catch(rejected);
+        });
 
-        c.hash(hash_test.value)
-            .then(resolved)
-            .catch(rejected);
+        it("should decrypt plaintext using derived symkey", function(done) {
+            var resolved = function(r) {
+                expect(c.decrypted_text).toEqual(plaintext);
+                c.log('decrypted text: ' + c.decrypted_text + ' == ' + plaintext, 1);
+                done();
+            };
+            var rejected = function(e) {
+                expect(e).toBeUndefined();
+                done();
+            };
+
+            c.decrypt_sym(c.encrypted_segments, c.derived_key)
+                .then(resolved)
+                .catch(rejected);
+        });
+        
     });
-
-    /**
-     * Re-import previously exported keyx pubkey
-     */
-    it("should import a previously exported keyx key", function(done) {
-        var resolved = function(r) {
-            expect(c.keychain['keyx'].imported.public_key).not.toBe(null);
-            c.log('imported key: ' + c.keychain['keyx'].imported.public_key, 1);
-            done();
-        };
-        var rejected = function(e) {
-            expect(e).toBeUndefined();
-            done();
-        };
-
-        c.import_key('keyx', c.keychain['keyx'].exported.public_key, 'spki', true)
-            .then(resolved)
-            .catch(rejected);
-    });
-
-    /**
-     * Derive symkey from re-imported keyx pubkey and existing keyx privkey
-     */
-    it("should derive a symkey from re-imported pubkey and privkey from keychain keyx", function(done) {
-        var resolved = function(r) {
-            expect(c.derived_key).not.toBe(null);
-            c.log('derived key: ' + c.derived_key, 1);
-            done();
-        };
-        var rejected = function(e) {
-            expect(e).toBeUndefined();
-            done();
-        };
-
-        c.derive_key(c.keychain['keyx'].private_key, c.keychain['keyx'].imported.public_key, true)
-            .then(resolved)
-            .catch(rejected);
-    });
-
-
 });
