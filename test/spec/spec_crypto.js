@@ -188,6 +188,37 @@ describe("EchoesCrypto", function() {
                 .then(resolved)
                 .catch(rejected);
         });
-        
+        it("should encrypt plaintext using pubkey", function(done) {
+            var resolved = function(r) {
+                expect(c.encrypted_segments.length).toBeGreaterThan(0);
+                c.log('encrypted segments: ' + c.encrypted_segments, 1);
+                done();
+            };
+            var rejected = function(e) {
+                expect(e).toBeUndefined();
+                done();
+            };
+
+            c.encrypt_asym(plaintext, c.keychain['encrypt'].public_key)
+                .then(resolved)
+                .catch(rejected);
+        });
+
+        it("should decrypt plaintext using privkey", function(done) {
+            var resolved = function(r) {
+                expect(c.decrypted_text).toEqual(plaintext);
+                c.log('decrypted text: ' + c.decrypted_text + ' == ' + plaintext, 1);
+                done();
+            };
+            var rejected = function(e) {
+                expect(e).toBeUndefined();
+                done();
+            };
+
+            c.decrypt_asym(c.encrypted_segments, c.keychain['encrypt'].private_key)
+                .then(resolved)
+                .catch(rejected);
+        });
+
     });
 });
