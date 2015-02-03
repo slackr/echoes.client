@@ -30,7 +30,7 @@ describe("EchoesCrypto", function() {
         });
 
         it("should encode and decode unicode characters properly", function() {
-            var chars = "☃❄❅❆★☆✪✫✯⚝⚫⚹✵❉❋";
+            var chars = "☃❄❅❆★☆✪✫✯⚝⚫⚹✵❉❋☃❄❅❆★☆✪✫✯⚝⚫⚹✵❉❋";
             var encoded = c.uni_encode(chars);
             var decoded = c.uni_decode(encoded);
 
@@ -156,69 +156,85 @@ describe("EchoesCrypto", function() {
         /**
          * Encrypt and decrypt with the symmetric key derived earlier
          */
-        var plaintext = "test ☃❄❅❆★☆✪✫✯⚝⚫⚹✵❉❋";
-        it("should encrypt plaintext using derived symkey", function(done) {
-            var resolved = function(r) {
-                expect(c.encrypted_segments.length).toBeGreaterThan(2); // 3: 0=iv, 1=aad, 2+=ciphertext
-                c.log('encrypted segments: ' + c.encrypted_segments, 1);
-                done();
-            };
-            var rejected = function(e) {
-                expect(e).toBeUndefined();
-                done();
-            };
+        var plaintexts = {
+            empty_array: { value: [], expected: '' },
+            empty_hash: { value: {}, expected: '' },
+            nothing:  { value: null, expected: '' },
+            blank:  { value: "", expected: '' },
+            ascii_word:  { value: "test", expected: "test" },
+            unicode_word:  { value: "☃✪✫✯", expected: "☃✪✫✯" },
+            au_mix:  { value: "test ☃❄❅", expected: "test ☃❄❅" },
+            au_mix_long:  { value: "test ☃❄❅❆★☆✪✫✯⚝⚫⚹✵❉❋☃❄❅❆★☆✪✫✯⚝⚫⚹✵❉❋☃❄❅❆★☆✪✫✯⚝⚫⚹✵❉❋", expected: "test ☃❄❅❆★☆✪✫✯⚝⚫⚹✵❉❋☃❄❅❆★☆✪✫✯⚝⚫⚹✵❉❋☃❄❅❆★☆✪✫✯⚝⚫⚹✵❉❋" },
+        }
 
-            c.encrypt_sym(plaintext, c.derived_key)
-                .then(resolved)
-                .catch(rejected);
-        });
+        var test_encrypt_decrypt = function(plaintext, plaintext_type, expected) {
+            it("should encrypt plaintext using derived symkey for '" + plaintext_type + "'", function(done) {
+                var resolved = function(r) {
+                    expect(c.encrypted_segments.length).toBeGreaterThan(2); // 3: 0=iv, 1=aad, 2+=ciphertext
+                    c.log('encrypted segments: ' + c.encrypted_segments, 1);
+                    done();
+                };
+                var rejected = function(e) {
+                    expect(e).toBeUndefined();
+                    done();
+                };
 
-        it("should decrypt plaintext using derived symkey", function(done) {
-            var resolved = function(r) {
-                expect(c.decrypted_text).toEqual(plaintext);
-                c.log('decrypted text: ' + c.decrypted_text + ' == ' + plaintext, 1);
-                done();
-            };
-            var rejected = function(e) {
-                expect(e).toBeUndefined();
-                done();
-            };
+                c.encrypt_sym(plaintext, c.derived_key)
+                    .then(resolved)
+                    .catch(rejected);
+            });
 
-            c.decrypt_sym(c.encrypted_segments, c.derived_key)
-                .then(resolved)
-                .catch(rejected);
-        });
-        it("should encrypt plaintext using pubkey", function(done) {
-            var resolved = function(r) {
-                expect(c.encrypted_segments.length).toBeGreaterThan(0);
-                c.log('encrypted segments: ' + c.encrypted_segments, 1);
-                done();
-            };
-            var rejected = function(e) {
-                expect(e).toBeUndefined();
-                done();
-            };
+            it("should decrypt plaintext using derived symkey for '" + plaintext_type + "'", function(done) {
+                var resolved = function(r) {
+                    expect(c.decrypted_text).toBe(expected);
+                    c.log("decrypted text: '" + c.decrypted_text + "' == '" + expected + "'", 1);
+                    done();
+                };
+                var rejected = function(e) {
+                    expect(e).toBeUndefined();
+                    done();
+                };
 
-            c.encrypt_asym(plaintext, c.keychain['encrypt'].public_key)
-                .then(resolved)
-                .catch(rejected);
-        });
+                c.decrypt_sym(c.encrypted_segments, c.derived_key)
+                    .then(resolved)
+                    .catch(rejected);
+            });
 
-        it("should decrypt plaintext using privkey", function(done) {
-            var resolved = function(r) {
-                expect(c.decrypted_text).toEqual(plaintext);
-                c.log('decrypted text: ' + c.decrypted_text + ' == ' + plaintext, 1);
-                done();
-            };
-            var rejected = function(e) {
-                expect(e).toBeUndefined();
-                done();
-            };
+            it("should encrypt plaintext using pubkey for '" + plaintext_type + "'", function(done) {
+                var resolved = function(r) {
+                    expect(c.encrypted_segments.length).toBeGreaterThan(0);
+                    c.log('encrypted segments: ' + c.encrypted_segments, 1);
+                    done();
+                };
+                var rejected = function(e) {
+                    expect(e).toBeUndefined();
+                    done();
+                };
 
-            c.decrypt_asym(c.encrypted_segments, c.keychain['encrypt'].private_key)
-                .then(resolved)
-                .catch(rejected);
-        });
+                c.encrypt_asym(plaintext, c.keychain['encrypt'].public_key)
+                    .then(resolved)
+                    .catch(rejected);
+            });
 
+            it("should decrypt plaintext using privkey for '" + plaintext_type + "'", function(done) {
+                var resolved = function(r) {
+                    expect(c.decrypted_text).toBe(expected);
+                    c.log("decrypted text: '" + c.decrypted_text + "' == '" + expected + "'", 1);
+                    done();
+                };
+                var rejected = function(e) {
+                    expect(e).toBeUndefined();
+                    done();
+                };
+
+                c.decrypt_asym(c.encrypted_segments, c.keychain['encrypt'].private_key)
+                    .then(resolved)
+                    .catch(rejected);
+            });
+        }
+
+        for (var pt in plaintexts) {
+            test_encrypt_decrypt(plaintexts[pt].value, pt, plaintexts[pt].expected);
+        }
     });
 });
