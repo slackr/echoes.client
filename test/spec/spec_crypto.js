@@ -9,12 +9,15 @@ describe("EchoesCrypto", function() {
      * Test synchronous functions
      */
     describe("Synchronous methods", function() {
-        it("should support 'crypto' and 'ec' features", function() {
+        it("should support 'crypto' feature", function() {
             c.does_browser_support('crypto');
+
+            expect(c.browser_support['crypto'].supported).toBe(true);
+        });
+        it("should support 'ec' feature", function() {
             c.does_browser_support('ec');
 
-            expect(c.browser_support['crypto'].supported).toEqual(true);
-            expect(c.browser_support['ec'].supported).toEqual(true);
+            expect(c.browser_support['ec'].supported).toBe(true);
         });
 
         it("should generate two random IVs", function() {
