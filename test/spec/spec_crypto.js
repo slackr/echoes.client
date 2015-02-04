@@ -1,6 +1,5 @@
 describe("EchoesCrypto", function() {
     var c = new EchoesCrypto();
-    var test_keychains = ['encrypt', 'keyx', 'sign']
 
     AppConfig.CONSOLE_LOG = true;
     AppConfig.LOG_LEVEL = 0;
@@ -20,7 +19,7 @@ describe("EchoesCrypto", function() {
             expect(c.browser_support['ec'].supported).toBe(true);
         });
 
-        it("should generate two random IVs", function() {
+        it("should generate two random IVs that don't match", function() {
             var iv_size = 128; // 128bit/16byte array
             var iv1 = c.new_iv(iv_size);
             var iv2 = c.new_iv(iv_size);
@@ -52,8 +51,27 @@ describe("EchoesCrypto", function() {
         /**
          * Loop test keychains
          */
+        var test_keychains = {
+            'encrypt': {
+                export_chains: {
+                    'encrypt_public': { expected: 'public_key' },
+                }
+            },
+            'keyx': {
+                export_chains: {
+                    'keyx_public': { expected: 'public_key' },
+                }
+            },
+            'sign': {
+                export_chains: {
+                    'sign_public': { expected: 'public_key' },
+                    'sign_private': { expected: 'private_key' },
+                }
+            },
+        };
+
         var test_genkey = function(kc) {
-            it("should generate a public and private keypair for '" + kc + "'", function(done) {
+            it("should generate a keypair for '" + kc + "'", function(done) {
                 var resolved = function(r) {
                     expect(c.keychain[kc].private_key).not.toBe(null);
                     expect(c.keychain[kc].public_key).not.toBe(null);
@@ -70,10 +88,10 @@ describe("EchoesCrypto", function() {
             });
         }
 
-        var test_exportkey = function(kc) {
-            it("should export public key from keychain '" + kc + "'", function(done) {
+        var test_exportkey = function(kc, export_chain, export_expected_keytype) {
+            it("should export '" + export_chain + "' key from keychain '" + kc + "'", function(done) {
                 var resolved = function(r) {
-                    expect(c.keychain[kc].exported.public_key).not.toBe(null);
+                    expect(c.keychain[kc].exported[export_expected_keytype]).not.toBe(null);
                     done();
                 };
                 var rejected = function(e) {
@@ -81,21 +99,19 @@ describe("EchoesCrypto", function() {
                     done();
                 };
 
-                c.export_key(kc + '_public', 'spki')
+                c.export_key(export_chain)
                     .then(resolved)
                     .catch(rejected);
             });
         }
 
-        for (var i in test_keychains) {
-            var kc = test_keychains[i];
-
+        for (var kc in test_keychains) {
             test_genkey(kc);
         }
-        for (var i in test_keychains) {
-            var kc = test_keychains[i];
-
-            test_exportkey(kc);
+        for (var kc in test_keychains) {
+            for (var export_chain in test_keychains[kc].export_chains) {
+                test_exportkey(kc, export_chain, test_keychains[kc].export_chains[export_chain].expected);
+            }
         }
 
         /**
