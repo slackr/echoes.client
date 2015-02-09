@@ -557,3 +557,13 @@ EchoesClient.prototype.wipe_nickchain = function(nick) {
     delete this.nickchain[nick];
     this.log('wiped nickchain for ' + nick, 0);
 }
+
+/**
+ * Wipe all keychains
+ *
+ * @returns {null}
+ */
+EchoesClient.prototype.wipe_all_nickchains = function() {
+    this.nickchain = {};
+    this.log('wiped all nickchains', 0);
+}

@@ -248,7 +248,6 @@ EchoesSocket.prototype.attach_socket_events = function() {
     this.socket.on('reconnect_error', function(e) {
         self.ui.log('reconnect error ' + e, 3);
     });
-
     this.socket.on('reconnect', function() {
         self.last_error = null;
         self.client.join_channels();
@@ -265,7 +264,7 @@ EchoesSocket.prototype.attach_socket_events = function() {
 
     });
     this.socket.on('disconnect', function() {
-        self.client.wipe_nickchain(); // bye bye nick keys
+        self.client.wipe_all_nickchains(); // bye bye nick keys
         self.ui.log('session keychain wiped on disconnect', 1);
         self.client.update_encrypt_state(self.ui.active_window().attr('windowname'));
 
