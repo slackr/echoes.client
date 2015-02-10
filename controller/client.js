@@ -339,7 +339,7 @@ EchoesClient.prototype.keyx_import = function(data) {
                 self.keyx_derive_key(nick, self.crypto.keychain[kc].private_key, self.get_nickchain_property(nick, 'public_key'));
             }
 
-            self.ui.status('Imported ' + kc + ' public key from ' + nick + ' (' + self.get_nickchain_property(nick, 'hash') + ')');
+            self.ui.status('Imported public key from ' + nick + ' (' + self.get_nickchain_property(nick, 'hash') + ')');
             self.log(kc + ' pubkey import successful from: ' + nick + ' (' + self.get_nickchain_property(nick, 'hash') + ')', 0);
         }).catch(function(e) {
             self.wipe_nickchain(nick);
