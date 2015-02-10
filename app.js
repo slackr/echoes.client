@@ -56,6 +56,17 @@ $(document).ready(function() {
     $crypto.does_browser_support('crypto');
     $crypto.does_browser_support('ec');
 
+    /**
+     * generate new key(s) if supported
+     */
+    if ($crypto.browser_support.crypto.supported) {
+        $client.keyx_new_key(null, 'encrypt');
+
+        if ($crypto.browser_support.ec.supported) {
+            $client.keyx_new_key(null, 'keyx');
+        }
+    }
+
     $ui.get_me();
 
     $(window).keydown(function(event) {
