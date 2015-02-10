@@ -377,7 +377,7 @@ EchoesClient.prototype.keyx_new_key = function(endpoint, kc) {
         return;
     }
 
-    this.ui.status('Generting new ' + kc + ' session keys...');
+    this.ui.status('Generting new session keys...');
     this.log('generating new ' + kc + ' session keypair...', 0);
 
     var self = this;
