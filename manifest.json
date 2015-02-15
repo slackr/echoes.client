@@ -1,0 +1,19 @@
+/**
+ * Echoes Client
+ *
+ * @author  Adrian@Slacknet
+ * @license http://www.gnu.org/licenses/gpl-3.0.txt GPLv3
+ */
+
+{
+  "name": "echoes client",
+  "description": "echoes ))) end-to-end encrypted messaging",
+  "version": "0.1",
+  "manifest_version": 2,
+  "app": {
+    "background": {
+      "scripts": ["app/background.js"]
+    }
+  }
+  //"icons": { "16": "", "128": "" }
+}
