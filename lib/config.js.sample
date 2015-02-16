@@ -17,8 +17,5 @@ var AppConfig = {
         //'jsonp-polling',
     ],
 
-    VALID_NICK_REGEX: /[^a-z0-9\-\_]+/gi,
-    VALID_CHAN_REGEX: /[^a-z0-9\-\_]+/gi,
-
     PARALLAX_AUTH: 'https://echoes.im',
 }
