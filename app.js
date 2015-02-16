@@ -41,6 +41,9 @@ $(document).ready(function() {
     $ui = new EchoesUi();
     $client = new EchoesClient();
     $socket = new EchoesSocket();
+    $storage = new EchoesStorage();
+
+    $storage.get_store();
 
     /**
      * Set controller cross references
