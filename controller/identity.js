@@ -37,8 +37,8 @@ EchoesIdentity.prototype.new_identity = function(id) {
     var self = this;
 
     this.crypto.generate_key('sign', true).then(function() {
-        self.crypto.export_key('sign_public').then(function(){
-            self.crypto.export_key('sign_private').then(function(){
+        self.crypto.export_key('sign_public').then(function() {
+            self.crypto.export_key('sign_private').then(function() {
                 id.pubkey = self.crypto.keychain.sign.exported.public_key;
                 self.register(id);
             });
@@ -88,28 +88,38 @@ EchoesIdentity.prototype.register = function(id) {
 /**
  * (async) Load identity from storage and import the private key
  *
+ * @param   {function}  callback    (optional) Function to callback when loading is complete
+ *
  * @returns {null}
  */
-EchoesIdentity.prototype.load_identity = function() {
+EchoesIdentity.prototype.load_identity = function(callback, callback_noid) {
     var self = this;
 
     this.storage.get('identity', function(data) {
-        if (typeof data.identity == 'undefined') {
+        if (typeof data.identity == 'undefined'
+            || data.identity == null) {
             self.log("no identity found in storage", 2);
+            if (typeof callback_noid == 'function') {
+                callback_noid();
+            }
             return;
         }
 
-        var id = JSON.parse(data.identity);
-        self.crypto.import_key('sign', id.privkey, 'pkcs8', true)
+        var identity_data = JSON.parse(data.identity);
+        self.crypto.import_key('sign', identity_data.privkey, 'pkcs8', true)
             .then(function() {
-                self.id = id.identity;
-                self.device = id.device;
+                self.id = identity_data.identity;
+                self.device = identity_data.device;
                 self.log("identity '" + self.id + "' loaded from storage", 1);
+                if (typeof callback == 'function') {
+                    callback(identity_data);
+                }
             })
-            .catch(function(e){
+            .catch(function(e) {
+                console.log(e);
                 self.id = null;
                 self.device = null;
-                self.log("failed to load identity '" + id.identity + "' from storage", 3);
+                self.log("failed to load identity '" + identity_data.identity + "' from storage: " + e, 3);
             });
     });
 }
@@ -137,9 +147,11 @@ EchoesIdentity.prototype.save_identity = function(id) {
  *
  * @see EchoesIdentity#load_identity
  *
+ * @param   {function}  callback    (optional) Passed to auth_reply
+ *
  * @returns {null}
  */
-EchoesIdentity.prototype.auth_request = function() {
+EchoesIdentity.prototype.auth_request = function(callback) {
     var self = this;
 
     var data = {
@@ -162,7 +174,7 @@ EchoesIdentity.prototype.auth_request = function() {
                 self.crypto.sign(nonce, self.crypto.keychain.sign.imported.private_key)
                     .then(function() {
                         var nonce_signature = btoa(self.crypto.resulting_signature);
-                        self.auth_reply(nonce, nonce_signature);
+                        self.auth_reply(nonce, nonce_signature, callback);
                     })
                     .catch(function(e) {
                         self.log('failed to sign nonce from auth-reply: ' + data.nonce + ', e: ' + e);
@@ -182,11 +194,15 @@ EchoesIdentity.prototype.auth_request = function() {
 /**
  * (async) Reply to auth request with signed nonce
  *
+ * First parameter of callback will be the session_id returned from parallax
+ *
  * @see EchoesIdentity#auth_request
+ *
+ * @param   {function}  callback    (optional) Function to callback when auth-reply succeeds
  *
  * @returns {null}
  */
-EchoesIdentity.prototype.auth_reply = function(nonce, nonce_signature) {
+EchoesIdentity.prototype.auth_reply = function(nonce, nonce_signature, callback) {
     var self = this;
 
     var data = {
@@ -207,6 +223,10 @@ EchoesIdentity.prototype.auth_reply = function(nonce, nonce_signature) {
             case 'success':
                 self.log('auth success: ' + JSON.stringify(data), 0);
                 self.session_id = data.session_id;
+
+                if (typeof callback == 'function') {
+                    callback(self.session_id);
+                }
             break;
             default:
                 self.log('auth reply error: ' + JSON.stringify(data), 3);
