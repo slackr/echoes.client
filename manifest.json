@@ -16,7 +16,13 @@
         }
     },
     "permissions": [
-        "storage"
+        "storage",
+        "http://localhost/",
+        "http://127.0.0.1/",
+        "https://echoes.im/",
+        "https://io.echoes.im/",
+        "https://echoes.azurewebsites.net/",
+        "https://echoes-io.azurewebsites.net/"
     ],
     "icons": {
         "16": "favicon.ico",
