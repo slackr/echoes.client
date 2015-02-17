@@ -72,6 +72,23 @@ $(document).ready(function() {
         if ($crypto.browser_support.ec.supported) {
             $client.keyx_new_key(null, 'keyx');
         }
+
+        $id.load_identity(
+            function(identity_data) {
+                $me = identity_data.identity;
+                $ui.ui.me_input.val($me);
+
+                $id.auth_request(function(sid) {
+                    $session_id = sid;
+                    $ui.show_me('Ready to connect!');
+                });
+            },
+            function() {
+                $me = null;
+                $ui.show_me('What do they call you?');
+                $ui.ui.me_input.val('');
+            }
+        );
     }
 
     $ui.show_me();
