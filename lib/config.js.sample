@@ -7,7 +7,6 @@
 
 var AppConfig = {
     LOG_LEVEL: 3,
-    CONSOLE_LOG: true,
     WS_SERVER: 'wss://io.echoes.im/',
     USE_SYNC_STORAGE: true,
 
