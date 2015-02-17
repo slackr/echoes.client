@@ -214,16 +214,22 @@ EchoesSocket.prototype.attach_socket_events = function() {
     this.socket.on('*fatal', function(e) {
         self.ui.log('fatal! ' + e, 3);
         switch (e) {
-            case 'nick_invalid':
-                self.me = null;
-                self.ui.show_me('Bad nickname :( try again');
-            break;
             case 'nick_exists':
                 self.me = null;
-                self.ui.show_me('Nickname exists :( try again');
+                self.ui.show_me('Nickname already connected :( try again');
+            break
+            case 'nick_invalid':
+                self.me = null;
+                self.ui.show_me('Invalid nickname :( try again');
+            break;
+            case 'auth_invalid_session':
+                self.ui.show_me('Invalid session for ' + self.me + '. Please log in again!');
+            break
+            case 'auth_http_error':
+                self.ui.show_me('Server failed to verify identity for ' + self.me + '. Try again later');
             break
             default:
-                self.ui.error(e);
+                self.ui.show_me('Unknown error: ' + e);
             break
         }
     });
