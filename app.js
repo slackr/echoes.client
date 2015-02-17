@@ -42,19 +42,23 @@ $(document).ready(function() {
     $client = new EchoesClient();
     $socket = new EchoesSocket();
     $storage = new EchoesStorage();
+    $id = new EchoesIdentity();
 
     $storage.get_store();
 
     /**
      * Set controller cross references
      *
-     * Socket reference for client object is set later, after initialization
+     * Socket reference for client object is set after initialization
      */
     $client.crypto = $crypto;
     $client.ui = $ui;
     $socket.client = $client;
     $socket.ui = $ui;
     $socket.crypto = $crypto;
+    $id.ui = $ui;
+    $id.crypto = $crypto;
+    $id.storage = $storage;
 
     $crypto.does_browser_support('crypto');
     $crypto.does_browser_support('ec');
