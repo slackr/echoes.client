@@ -440,7 +440,7 @@ EchoesUi.prototype.show_window = function(name) {
  *
  * @returns {null}
  */
-EchoesUi.prototype.get_me = function(message) {
+EchoesUi.prototype.show_me = function(message) {
     var self = this;
     message = message || 'What do they call you?';
 

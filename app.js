@@ -70,7 +70,7 @@ $(document).ready(function() {
         }
     }
 
-    $ui.get_me();
+    $ui.show_me();
 
     $(window).keydown(function(event) {
         // change input focus depending on what window is visible
@@ -84,7 +84,7 @@ $(document).ready(function() {
             }
         }
 
-        // on return keydown, if me_input is visible, assume a new connection needs to be made
+        // on return keydown, if #me is visible, assume a new connection needs to be made
         if (event.which == 13) {
             if ($ui.ui.me.is(':visible')) {
                 $me = $ui.ui.me_input.val();

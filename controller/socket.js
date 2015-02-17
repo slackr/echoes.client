@@ -216,11 +216,11 @@ EchoesSocket.prototype.attach_socket_events = function() {
         switch (e) {
             case 'nick_invalid':
                 self.me = null;
-                self.ui.get_me('Bad nickname :( try again');
+                self.ui.show_me('Bad nickname :( try again');
             break;
             case 'nick_exists':
                 self.me = null;
-                self.ui.get_me('Nickname exists :( try again');
+                self.ui.show_me('Nickname exists :( try again');
             break
             default:
                 self.ui.error(e);
