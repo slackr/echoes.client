@@ -83,6 +83,9 @@ body {
     border-bottom-width: 2px;
     border-bottom-style: solid;
 }
+#me_message {
+    font-size: 25px;
+}
 
 #menu_channels, #menu_nicknames {
     cursor: pointer;

@@ -85,13 +85,14 @@ $(document).ready(function() {
             },
             function() {
                 $me = null;
-                $ui.show_me('What do they call you?');
-                $ui.ui.me_input.val('');
+                $id.ui.show_me('What do they call you?');
+                $id.ui.ui.me_input.val('');
+                $id.ui.ui.me_input.focus();
             }
         );
+    } else {
+        $id.ui.show_me('Unsupported client :( Try Chrome or Firefox!');
     }
-
-    $ui.show_me();
 
     $(window).keydown(function(event) {
         // change input focus depending on what window is visible
