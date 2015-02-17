@@ -12,7 +12,7 @@
  * @extends EchoesObject
  */
 function EchoesClient() {
-    EchoesObject.call(this, 'socket');
+    EchoesObject.call(this, 'client');
 
     this.socket = null; // socket.io object ref
     this.ui = null; // ui object ref
