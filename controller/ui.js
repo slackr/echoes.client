@@ -27,6 +27,7 @@ function EchoesUi() {
         echoes: $("#echoes"),
         input: $('#echo_input'),
         me_input: $('#me_input'),
+        me_message: $('#me_message'),
         me: $('#me'),
         form: $('form'),
         current_window_name: $('#current_window_name'),
@@ -418,10 +419,8 @@ EchoesUi.prototype.show_window = function(name) {
 
         if ($(this).attr('windowtype') == 'nickname') {
             self.toggle_encrypt_icon(true);
-            //self.ui.current_window_name.css('float', 'right');
         } else {
             self.toggle_encrypt_icon(false);
-            //self.ui.current_window_name.css('float', 'left');
         }
 
         self.ui.current_window_name.fadeIn('fast');
@@ -442,12 +441,11 @@ EchoesUi.prototype.show_window = function(name) {
  */
 EchoesUi.prototype.show_me = function(message) {
     var self = this;
-    message = message || 'What do they call you?';
+    message = message || ')))';
 
-    this.ui.me_input.attr('placeholder', '');
-    this.ui.me_input.val('');
+    this.ui.me_message.text('');
     this.ui.me.fadeIn('fast', function() {
-        self.ui.me_input.attr('placeholder', message);
+        self.ui.me_message.text(message);
     });
     this.ui.me_input.focus();
 }
@@ -458,8 +456,8 @@ EchoesUi.prototype.show_me = function(message) {
  * @returns {null}
  */
 EchoesUi.prototype.hide_me = function() {
-    this.ui.me_input.val(':)');
-    this.ui.me.fadeOut('slow');
+    //this.ui.me_input.val(':)');
+    this.ui.me.fadeOut('fast');
 }
 
 /**
