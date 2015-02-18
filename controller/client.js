@@ -54,13 +54,6 @@ EchoesClient.prototype.execute_command = function(params) {
                     this.ui.status('AppConfig.LOG_LEVEL = ' + val);
                     this.log('AppConfig.LOG_LEVEL = ' + val, 0);
                 break;
-                case 'CONSOLE_LOG':
-                    var val = (params[1] == "1" || params[1] == "true" ? true : false);
-
-                    AppConfig.CONSOLE_LOG = val;
-                    this.ui.status('AppConfig.CONSOLE_LOG = ' + val);
-                    this.log('AppConfig.CONSOLE_LOG = ' + val, 0);
-                break;
                 default:
                     this.ui.error('Invalid AppConfig variable');
                     this.log('Invalid AppConfig variable ' + params[0], 3);
