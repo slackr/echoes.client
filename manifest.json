@@ -25,8 +25,10 @@
         "https://echoes-io.azurewebsites.net/"
     ],
     "icons": {
-        "16": "favicon.ico",
-        "48": "favicon.ico",
-        "128": "favicon.ico"
+        "16": "app/assets/icon-16.png",
+        "24": "app/assets/icon-24.png",
+        "32": "app/assets/icon-32.png",
+        "48": "app/assets/icon-48.png",
+        "64": "app/assets/icon-64.png"
     }
 }
