@@ -172,13 +172,13 @@ EchoesClient.prototype.keyx_derive_key = function(nick, private_key, public_key)
 
         self.update_encrypt_state(nick);
 
-        self.ui.status('Successfully derived symkey for ' + nick);
+        self.ui.status('Successfully derived encryption key for ' + nick);
         self.log('symkey derived for: ' + nick, 0);
     }).catch(function(e){
         self.wipe_nickchain(nick);
         self.update_encrypt_state(nick);
 
-        self.ui.error({ error: 'Failed to generate encryption key for ' + nick, debug: e.toString() });
+        self.ui.error({ error: 'Failed to derive encryption key for ' + nick, debug: e.toString() });
         self.log('derive: ' + e.toString(), 3);
     });
 }
