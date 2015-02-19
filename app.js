@@ -67,7 +67,7 @@ $(document).ready(function() {
      * generate new key(s) if supported
      */
     if ($crypto.browser_support.crypto.supported) {
-        $client.keyx_new_key(null, 'encrypt');
+        $client.keyx_new_key(null, 'asym');
 
         if ($crypto.browser_support.ec.supported) {
             $client.keyx_new_key(null, 'keyx');

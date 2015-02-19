@@ -179,7 +179,7 @@ EchoesSocket.prototype.attach_socket_events = function() {
 
         self.ui.status('Key rejected, falling back...');
 
-        self.client.set_nickchain_property(data.from, { keychain: 'encrypt' });
+        self.client.set_nickchain_property(data.from, { keychain: 'asym' });
         self.client.keyx_send_key(data.from);
     });
     this.socket.on('*keyx_off', function(data){

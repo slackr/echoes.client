@@ -301,7 +301,7 @@ EchoesClient.prototype.keyx_off = function(endpoint, inform_endpoint) {
  * Marked as async because key derivation for keyx is asynchronous (i should fix this)
  * Right now this function assumes it's public and will use 'spki' as the type
  *
- * data = { from: 'nick', keychain: 'keyx|encrypt', pubkey: 'base64 encoded PEM pubkey' }
+ * data = { from: 'nick', keychain: 'keyx|asym', pubkey: 'base64 encoded PEM pubkey' }
  *
  * @param   {object} data Object of keyx data to process
  *
@@ -354,15 +354,15 @@ EchoesClient.prototype.keyx_import = function(data) {
  * (async) Generate a new keypair before key exchange
  *
  * If 'endpoint' is not null/undefined, the exported pubkey will be sent
- * If kc is not specified 'encrypt' is used
+ * If kc is not specified 'asym' is used
  *
  * @param   {string} endpoint (optional) Who to send key to
- * @param   {string} kc       (default='encrypt') Which keychain to use
+ * @param   {string} kc       (default='asym') Which keychain to use
  *
  * @returns {null}
  */
 EchoesClient.prototype.keyx_new_key = function(endpoint, kc) {
-    kc = kc || 'encrypt';
+    kc = kc || 'asym';
 
     if (! this.crypto.browser_support.crypto.supported) {
         this.ui.error('Your browser does not support encrypted echoes, try the latest Chrome/Firefox');
@@ -402,10 +402,10 @@ EchoesClient.prototype.keyx_new_key = function(endpoint, kc) {
  *
  * If the client doesn't currently have a public key for the specified keychain, keyx_new_key is called first
  *
- * If browser supports elliptic curve, the 'keyx' keychain is used, else use 'encrypt'
+ * If browser supports elliptic curve, the 'keyx' keychain is used, else use 'asym'
  * If the endpoint already specified a supported keychain, use that instead
  *
- * !keyx is emitted to socket using { to: 'nick', pubkey: 'base64 encoded PEM formatted pubkey', keychain: 'keyx|encrypt' }
+ * !keyx is emitted to socket using { to: 'nick', pubkey: 'base64 encoded PEM formatted pubkey', keychain: 'keyx|asym' }
  *
  * @see EchoesClient#keyx_new_key
  * @see EchoesCrypto#browser_support
@@ -421,7 +421,7 @@ EchoesClient.prototype.keyx_send_key = function(endpoint) {
         return;
     }
 
-    var kc = this.get_nickchain_property(endpoint, 'keychain') || (this.crypto.browser_support.ec.supported ? 'keyx' : 'encrypt');
+    var kc = this.get_nickchain_property(endpoint, 'keychain') || (this.crypto.browser_support.ec.supported ? 'keyx' : 'asym');
 
     if (typeof this.crypto == 'undefined'
         || this.crypto.keychain[kc].public_key == null) {

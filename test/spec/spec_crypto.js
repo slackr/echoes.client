@@ -52,9 +52,9 @@ describe("EchoesCrypto", function() {
          * Loop test keychains
          */
         var test_keychains = {
-            'encrypt': {
+            'asym': {
                 export_chains: {
-                    'encrypt_public': { expected: 'public_key' },
+                    'asym_public': { expected: 'public_key' },
                 }
             },
             'keyx': {
@@ -230,7 +230,7 @@ describe("EchoesCrypto", function() {
                     done();
                 };
 
-                c.encrypt_asym(plaintext, c.keychain['encrypt'].public_key)
+                c.encrypt_asym(plaintext, c.keychain['asym'].public_key)
                     .then(resolved)
                     .catch(rejected);
             });
@@ -246,7 +246,7 @@ describe("EchoesCrypto", function() {
                     done();
                 };
 
-                c.decrypt_asym(c.encrypted_segments, c.keychain['encrypt'].private_key)
+                c.decrypt_asym(c.encrypted_segments, c.keychain['asym'].private_key)
                     .then(resolved)
                     .catch(rejected);
             });
