@@ -78,11 +78,20 @@ body {
     bottom: 0;
 }
 
-#input_wrapper, #me_wrapper {
-    padding: 5px;
+#input_wrapper {
     border-bottom-width: 2px;
     border-bottom-style: solid;
     float: right;
+    position: absolute;
+    width: 100%;
+    bottom: 0px;
+    padding: 10px;
+}
+
+#me_wrapper {
+    padding: 5px;
+    border-bottom-width: 2px;
+    border-bottom-style: solid;
     position: absolute;
     width: 100%;
 }
@@ -188,6 +197,7 @@ body {
 
 #encrypt {
     cursor: pointer;
+    position: fixed;
     bottom: 0;
     left: 0;
     padding: 10px;
