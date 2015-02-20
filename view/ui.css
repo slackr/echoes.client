@@ -143,13 +143,39 @@ body {
     z-index: 200;
     display: block;
 }
-#me_wrapper {
+#me_wrapper, #popup_wrapper {
     position: absolute;
-    top: 40%;
+    top: 50%;
     left: 50%;
-    margin-left: -200px;
     width: 400px;
     text-align: center;
+    word-wrap: break-word;
+}
+
+#popup {
+    position: fixed;
+    height: 100%;
+    width: 100%;
+    z-index: 201;
+    display: none;
+}
+#popup_title {
+    font-size: 25px;
+    padding: 20px;
+    text-align: left;
+    font-weight: bold;
+}
+#popup_message {
+    font-size: 15px;
+    text-align: left;
+    padding: 20px;
+}
+#popup_yes, #popup_no {
+    display: inline-block;
+    padding: 20px;
+    float: right;
+    cursor: pointer;
+    font-size: 30px;
 }
 #current_window_name {
     display: none;

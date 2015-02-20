@@ -46,12 +46,12 @@ body {
     color: rgb(66, 133, 244);
 }
 
-#me {
+#me, #popup_wrapper {
     background-color: rgb(66, 133, 244);
     color: rgb(255, 255, 255);
 }
 
-#me_wrapper {
+#me_wrapper, #popup_wrapper {
     color: rgb(232, 232, 232);
     font-size: 40px;
 
@@ -63,8 +63,9 @@ body {
     color: rgb(255, 255, 255);
 }
 
-#close_lists {
+#close_lists, #popup {
     background: rgba(0, 0, 0, 0.5);
+    color: rgb(255, 255, 255);
 }
 
 #nicknames, #channels {

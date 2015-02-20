@@ -28,8 +28,8 @@ function EchoesUi() {
         input: $('#echo_input'),
         me_input: $('#me_input'),
         me_message: $('#me_message'),
+        me_wrapper: $('#me_wrapper'),
         me: $('#me'),
-        form: $('form'),
         current_window_name: $('#current_window_name'),
         buttons: {
             nicknames: $('#menu_nicknames'),
@@ -40,6 +40,14 @@ function EchoesUi() {
             close_lists: $('#close_lists'),
             nicknames: $('#nicknames'),
             channels: $('#channels'),
+        },
+        popup: {
+            window: $('#popup'),
+            title: $('#popup_title'),
+            message: $('#popup_message'),
+            wrapper: $('#popup_wrapper'),
+            yes: $('#popup_yes'),
+            no: $('#popup_no'),
         },
         show_window_callback: null, // function to call after show_window()
     }
@@ -444,10 +452,16 @@ EchoesUi.prototype.show_me = function(message) {
     message = message || ')))';
 
     this.ui.me_message.text('');
-    this.ui.me.fadeIn('fast', function() {
-        self.ui.me_message.text(message);
-    });
+
     this.ui.me_input.focus();
+
+    this.ui.me.fadeIn('fast', function(){
+        self.ui.me_message.text(message);
+
+        // center div
+        self.ui.me_wrapper.css('margin-top', -self.ui.me_wrapper.outerHeight()/2 + 'px');
+        self.ui.me_wrapper.css('margin-left', -self.ui.me_wrapper.outerWidth()/2 + 'px');
+    });
 }
 
 /**
@@ -477,4 +491,73 @@ EchoesUi.prototype.toggle_encrypt_icon = function(on_off) {
         this.ui.input.css('padding-left', '0px');
         this.ui.buttons.encrypt.fadeOut('fast');
     }
+}
+
+/**
+ * Displays a popup with an optional title or message
+ *
+ * If a yes_/no_callback is specified, it is called before popup_close() on 'click'
+ *
+ * If no "no" button text is specified, the button is hidden
+ * The "yes" button text will default to "CLOSE"
+ *
+ * @param   {string} title     (optional) Title of popup
+ * @param   {string} message    (optional) Message to display
+ * @param   {string} yes_text     (optional) Text to display in YES button
+ * @param   {string} no_text      (optional) Text to display in NO button
+ * @param   {function} yes_callback (optional) Function to call after YES onclick
+ * @param   {function} no_callback  (optional) Function to call after NO onclick
+ *
+ * @returns {null}
+ */
+EchoesUi.prototype.popup = function(title, message, yes_text, no_text, yes_callback, no_callback) {
+    var self = this;
+
+    this.ui.popup.no.off('click');
+    this.ui.popup.yes.off('click');
+
+    if (title) {
+        this.ui.popup.title.show().text(title);
+    } else {
+        this.ui.popup.title.hide();
+    }
+    if (typeof message == 'string') {
+        this.ui.popup.message.show().text(message);
+    } else {
+        this.ui.popup.message.hide();
+    }
+
+    this.ui.popup.yes.show().text(yes_text || "CLOSE");
+    this.ui.popup.yes.on('click', function() {
+        if (typeof yes_callback == 'function') {
+            yes_callback();
+        }
+        self.popup_close();
+    });
+
+    if (no_text) {
+        this.ui.popup.no.show().text(no_text);
+        this.ui.popup.no.on('click', function() {
+            if (typeof no_callback == 'function') {
+                no_callback();
+            }
+            self.popup_close();
+        });
+    } else {
+        this.ui.popup.no.hide();
+    }
+
+    this.ui.popup.window.show();
+
+    // center div
+    this.ui.popup.wrapper.css('margin-top', -this.ui.popup.wrapper.outerHeight()/2 + 'px');
+    this.ui.popup.wrapper.css('margin-left', -this.ui.popup.wrapper.outerWidth()/2 + 'px');}
+
+/**
+ * Close the popup window
+ *
+ * @returns {null}
+ */
+EchoesUi.prototype.popup_close = function() {
+    this.ui.popup.window.hide();
 }
