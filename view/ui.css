@@ -63,8 +63,7 @@ body {
 }
 
 #menubar, #input {
-    padding: 10px;
-    position: absolute;
+    position: fixed;
     width: 100%;
     height: 50px;
     list-style-type: none;
@@ -73,15 +72,19 @@ body {
 #menubar {
     z-index: 101;
     top: 0;
+    padding: 5px;
 }
 #input {
     bottom: 0;
 }
 
 #input_wrapper, #me_wrapper {
-    padding: 3px;
+    padding: 5px;
     border-bottom-width: 2px;
     border-bottom-style: solid;
+    float: right;
+    position: absolute;
+    width: 100%;
 }
 #me_message {
     font-size: 25px;
@@ -185,11 +188,10 @@ body {
 
 #encrypt {
     cursor: pointer;
-    position: fixed;
     bottom: 0;
-    left: 0px;
-    padding: 6px;
-    padding-left: 11px;
+    left: 0;
+    padding: 10px;
+    float: left;
 }
 #icon_unencrypted, #icon_oneway, #icon_encrypted {
     display: none;

@@ -483,7 +483,7 @@ EchoesUi.prototype.hide_me = function() {
  * @returns {null}
  */
 EchoesUi.prototype.toggle_encrypt_icon = function(on_off) {
-    var padding = '30px';
+    var padding = '35px';
     if (on_off) {
         this.ui.buttons.encrypt.fadeIn('fast');
         this.ui.input.css('padding-left', padding);
