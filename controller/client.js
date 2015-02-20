@@ -155,17 +155,18 @@ EchoesClient.prototype.join_channels = function() {
  * @param   {CryptoKey} private_key Object representing a private key
  * @param   {CryptoKey} public_key  Object representing a public key
  *
- * @returns {null}
+ * @returns {Promise} Either a .resolve(null) or .reject('error message')
  */
 EchoesClient.prototype.keyx_derive_key = function(nick, private_key, public_key) {
-    if (! private_key || ! public_key) {
-        this.ui.log('keyx symkey derivation skipped, pub: ' + public_key + ', priv: ' + private_key, 2);
-        return;
+    if (! private_key
+        || ! public_key) {
+        this.ui.log('keyx symkey derivation failed, pub: ' + public_key + ', priv: ' + private_key, 3);
+        return Promise.reject('Invalid public or private key');
     }
     var self = this;
     var c = new EchoesCrypto();
 
-    c.derive_key(private_key, public_key).then(function() {
+    return c.derive_key(private_key, public_key).then(function() {
         self.set_nickchain_property(nick, {
             symkey: c.derived_key,
         });
@@ -180,6 +181,44 @@ EchoesClient.prototype.keyx_derive_key = function(nick, private_key, public_key)
 
         self.ui.error({ error: 'Failed to derive encryption key for ' + nick, debug: e.toString() });
         self.log('derive: ' + e.toString(), 3);
+    });
+}
+
+/**
+ * Decrypts encrypted symkey from nick using private key
+ *
+ * @param   {string} nick                           Nickchain to use
+ * @param   {Array} encrypted_symkey_segments       Array of encrypted segments to pass to decrypt_asym
+ * @param   {CryptoKey} private_key                 CrytpoKey object to use for decryption
+ *
+ * @returns {Promise} Either a .resolve(null) or .reject('error message')
+ */
+EchoesClient.prototype.keyx_decrypt_symkey = function(nick, encrypted_symkey_segments, private_key) {
+    if (! private_key) {
+        this.ui.log('decrypt symkey failed, priv: ' + private_key, 3);
+        return Promise.rejected('Invalid private key');
+    }
+    var self = this;
+    var c = new EchoesCrypto();
+    var kc = 'sym';
+
+    return c.decrypt_asym(encrypted_symkey_segments, private_key).then(function() {
+        self.log('symkey decrypt successful from: ' + nick, 0);
+
+        return c.import_key(kc, c.decrypted_text, 'raw', false).then(function() {
+            self.set_nickchain_property(nick, {
+                symkey: c.keychain[kc].imported.key
+            });
+
+            self.ui.status('Successfully retrieved symkey from ' + nick);
+            self.log('symkey decrypted from: ' + nick + ' (' + self.get_nickchain_property(nick, 'symkey') + ')', 0);
+        }).catch(function(e) {
+            self.ui.error({ error: 'Failed to import symkey from ' + nick, debug: kc + ': ' + e.toString() });
+            self.log('decrypt symkey: ' + e.toString(), 3);
+        });
+    }).catch(function(e) {
+        self.ui.error({ error: 'Failed to decrypt symkey from ' + nick, debug: kc + ': ' + e.toString() });
+        self.log('decrypt symkey: ' + e.toString(), 3);
     });
 }
 
@@ -199,11 +238,9 @@ EchoesClient.prototype.decrypt_encrypted_echo = function(nick, echo) { // echo i
     }
 
     var kc = this.get_nickchain_property(nick, 'keychain');
-    if (typeof this.crypto == 'undefined'
-        || kc == null
-        || (this.crypto.keychain[kc].private_key == null
-            && this.get_nickchain_property(nick, 'symkey') == null)) {
-        this.ui.error("Unable to decrypt echo from " + nick + ". No decryption key available.");
+    if (kc == null
+        || this.get_nickchain_property(nick, 'symkey') == null) {
+        this.ui.error("Unable to decrypt echo from " + nick + ". No decryption key available. Initiate a key exchange.");
         return;
     }
     if (typeof echo != 'object'
@@ -242,9 +279,8 @@ EchoesClient.prototype.send_encrypted_echo = function(nick, echo) {
         return;
     }
 
-    if (this.get_nickchain_property(nick, 'public_key') == null
-        && this.get_nickchain_property(nick, 'symkey') ==  null) {
-        this.ui.error("You do not have a decryption key for " + nick + ". Initiate a key exchange first.");
+    if (this.get_nickchain_property(nick, 'symkey') ==  null) {
+        this.ui.error("You do not have an encryption key for " + nick + ". Initiate a key exchange first.");
         this.log('no encryption key found in nickchain: ' + nick, 3);
         return;
     }
@@ -255,7 +291,7 @@ EchoesClient.prototype.send_encrypted_echo = function(nick, echo) {
     c.encrypt(echo, this.get_nickchain_property(nick, 'public_key'), this.get_nickchain_property(nick, 'symkey')).then(function() {
         var and_echoes = false;
 
-        self.socket.emit('/echo', { // bypass execute_command for encrypted echoes, we'll write it on wall manually below
+        self.socket.emit('/echo', { // bypass execute_command for encrypted echoes, we'll write it on the wall manually below
             type: 'encrypted',
             to: nick,
             echo: c.encrypted_segments, // an array of base64 encoded segments
@@ -317,35 +353,76 @@ EchoesClient.prototype.keyx_import = function(data) {
     var self = this;
     var nick = data.from;
     var kc = data.keychain;
+    var encrypted_symkey_segments = data.symkey;
     var key = atob(data.pubkey);
     var c = new EchoesCrypto();
 
     c.import_key(kc, key, 'spki').then(function() {
         return c.hash(key).then(function() {
+            var nick_pubkey = c.keychain[kc].imported.public_key;
+
             self.set_nickchain_property(nick, {
-                public_key: c.keychain[kc].imported.public_key,
+                public_key: nick_pubkey,
                 hash: c.resulting_hash.match(/.{1,8}/g).join(' '),
                 keychain: kc,
             });
 
-            if (kc == 'keyx') {
-                self.keyx_derive_key(nick, self.crypto.keychain[kc].private_key, self.get_nickchain_property(nick, 'public_key'));
-            }
-
             self.ui.status('Imported public key from ' + nick + ' (' + self.get_nickchain_property(nick, 'hash') + ')');
             self.log(kc + ' pubkey import successful from: ' + nick + ' (' + self.get_nickchain_property(nick, 'hash') + ')', 0);
+
+            if (kc == 'keyx') {
+                if (self.crypto.keychain[kc].private_key) {
+                    return self.keyx_derive_key(nick, self.crypto.keychain[kc].private_key, nick_pubkey).then(function(){
+                        self.log('key derivation successful after import', 0);
+                    }).catch(function(e){
+                        self.log('key derivation failed after import: ' + e.toString(), 3);
+                    });
+                } else {
+                    self.log('key derivation skipped, no private key in keychain: ' + kc, 0);
+                    return Promise.resolve('public key import successful, derivation skipped (no private key)');
+                }
+            }
+
+            // if a symkey is sent with pubkey, attempt to decrypt it, otherwise generate a new symkey to be sent back
+            if (encrypted_symkey_segments) {
+                return self.keyx_decrypt_symkey(nick, encrypted_symkey_segments, self.crypto.keychain[kc].private_key).then(function(){
+                    self.log('symkey decryption successful after import', 0);
+                }).catch(function(e){
+                    self.log('symkey decryption failed after import: ' + e.toString(), 3);
+                });
+            } else {
+                self.log(kc + ' no symkey supplied by: ' + nick + ', generating a new one...', 0);
+                return c.generate_key('sym', true).then(function(){
+                    self.set_nickchain_property(nick, { symkey: c.keychain['sym'].key });
+                    return c.export_key('sym').then(function(){
+                        return c.encrypt_asym(c.keychain['sym'].exported.key, nick_pubkey).then(function(){
+                            self.set_nickchain_property(nick, { encrypted_symkey: c.encrypted_segments });
+                            self.ui.status('Sucessfully generated symkey for ' + nick);
+                        }).catch(function(e){
+                            self.ui.error('Failed to encrypt symkey for ' + nick + ': ' + e.toString());
+                            self.log('encrypt_asym for symkey to ' + nick + ' failed: ' + e.toString(), 3);
+                        });
+                    }).catch(function(e){
+                        self.ui.error('Failed to export symkey for ' + nick + ': ' + e.toString());
+                        self.log('export_key for symkey to ' + nick + ' failed: ' + e.toString(), 3);
+                    });
+                }).catch(function(e){
+                    self.ui.error('Failed to generate symkey for ' + nick + ': ' + e.toString());
+                    self.log('generate_key for symkey to ' + nick + ' failed: ' + e.toString(), 3);
+                });
+            }
         }).catch(function(e) {
             self.wipe_nickchain(nick);
             self.update_encrypt_state(nick);
 
-            self.ui.error({ error: 'Failed to import key from ' + nick, debug: kc + ': ' + e.toString() });
+            self.ui.error({ error: 'Failed hash public key from ' + nick, debug: kc + ': ' + e.toString() });
             self.log('hash: ' + e.toString(), 3);
         })
     }).catch(function(e) {
         self.wipe_nickchain(nick);
         self.update_encrypt_state(nick);
 
-        self.ui.error({ error: 'Failed to import key from ' + nick, debug: kc + ': ' +  e.toString() });
+        self.ui.error({ error: 'Failed to import public key from ' + nick, debug: kc + ': ' +  e.toString() });
         self.log('import key: ' + e.toString(), 3);
     });
 }
@@ -370,7 +447,7 @@ EchoesClient.prototype.keyx_new_key = function(endpoint, kc) {
         return;
     }
 
-    this.ui.status('Generating new session keys...');
+    this.ui.status('Generating new session keys (' + kc + ')...');
     this.log('generating new ' + kc + ' session keypair...', 0);
 
     var self = this;
@@ -421,10 +498,10 @@ EchoesClient.prototype.keyx_send_key = function(endpoint) {
         return;
     }
 
+    var self = this;
     var kc = this.get_nickchain_property(endpoint, 'keychain') || (this.crypto.browser_support.ec.supported ? 'keyx' : 'asym');
 
-    if (typeof this.crypto == 'undefined'
-        || this.crypto.keychain[kc].public_key == null) {
+    if (this.crypto.keychain[kc].public_key == null) {
         this.keyx_new_key(endpoint, kc);
         return;
     }
@@ -432,11 +509,15 @@ EchoesClient.prototype.keyx_send_key = function(endpoint) {
     this.set_nickchain_property(endpoint, { keychain: kc });
 
     this.log('found existing ' + kc + ' keypair, broadcasting...', 0);
-    this.socket.emit('!keyx', {
+
+    var broadcast = {
         to: endpoint,
         pubkey: btoa(this.crypto.keychain[kc].exported.public_key),
         keychain: kc,
-    });
+        symkey: this.get_nickchain_property(endpoint, 'encrypted_symkey'), // generated after import of pubkey in keyx_import()
+    }
+
+    this.socket.emit('!keyx', broadcast);
 }
 
 /**

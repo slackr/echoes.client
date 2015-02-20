@@ -91,7 +91,7 @@ $(document).ready(function() {
             }
         );
     } else {
-        $id.ui.show_me('Unsupported client :( Try Chrome or Firefox!');
+        $ui.popup('Warning!', 'Unsupported client :( Try Chrome or Firefox!', 'OK');
     }
 
     $(window).keydown(function(event) {
@@ -108,7 +108,18 @@ $(document).ready(function() {
 
         // on return keydown, if #me is visible, assume a new connection needs to be made
         if (event.which == 13) {
-            if ($ui.ui.me.is(':visible')) {
+            if ($ui.ui.popup.window.is(':visible')) {
+                if ($ui.ui.popup.yes.is(':visible')) {
+                    $ui.ui.popup.yes.click();
+                    return;
+                } else if ($ui.ui.popup.no.is(':visible')) {
+                    $ui.ui.popup.no.click();
+                    return;
+                } else {
+                    $ui.popup_close();
+                    return;
+                }
+            } else if ($ui.ui.me.is(':visible')) {
                 $me = $ui.ui.me_input.val();
                 if (! $me) {
                     return;
@@ -136,15 +147,19 @@ $(document).ready(function() {
     });
 
     $ui.ui.buttons.encrypt.click(function() {
+        if (! $socket.socket.connected) {
+            $ui.error('Not connected :(');
+            return;
+        }
+        
         var endpoint = $ui.active_window().attr('windowname');
         var current_state = $ui.get_window_state(endpoint);
         $ui.log('window current encryption state: ' + current_state, 0);
         switch (current_state) {
             case 'encrypted':
-                var turnoff = confirm('Turn off encryption for ' + endpoint + '?');
-                if (turnoff) {
+                $ui.popup('Encryption', 'Turn off encryption for ' + endpoint + '?', 'YES', 'NO', function() {
                     $client.execute_command(['/keyx_off', endpoint]);
-                }
+                });
             break;
             case 'unencrypted':
             case 'oneway':

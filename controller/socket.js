@@ -193,10 +193,6 @@ EchoesSocket.prototype.attach_socket_events = function() {
             keysent: true,
         });
 
-        if (data.keychain == 'keyx') {
-            self.client.keyx_derive_key(nick, self.crypto.keychain[data.keychain].private_key, self.client.get_nickchain_property(nick, 'public_key'));
-        }
-
         self.client.update_encrypt_state(nick);
 
         self.ui.status('Public key sent to ' + nick + ' (' + self.crypto.keychain[self.client.get_nickchain_property(nick, 'keychain')].exported.hash + ')');
@@ -216,20 +212,30 @@ EchoesSocket.prototype.attach_socket_events = function() {
         switch (e) {
             case 'nick_exists':
                 self.me = null;
-                self.ui.show_me('Nickname already connected :( try again');
+                self.ui.popup('Error', 'Nickname already connected :( Please try again', 'OK', function() {
+                    self.ui.show_me();
+                })
             break
             case 'nick_invalid':
                 self.me = null;
-                self.ui.show_me('Invalid nickname :( try again');
+                self.ui.popup('Error', 'Nickname is invalid :( Please try again', 'OK', function() {
+                    self.ui.show_me();
+                })
             break;
             case 'auth_invalid_session':
-                self.ui.show_me('Invalid session for ' + self.me + '. Please log in again!');
+                self.ui.popup('Error', 'Invalid session for ' + self.me + '. Please log in again!', 'OK', function() {
+                    self.ui.show_me();
+                });
             break
             case 'auth_http_error':
-                self.ui.show_me('Server failed to verify identity for ' + self.me + '. Try again later');
+                self.ui.popup('Error', 'Server failed to verify identity for ' + self.me + '. Try again later', 'OK', function() {
+                    self.ui.show_me();
+                });
             break
             default:
-                self.ui.show_me('Unknown error: ' + e);
+                self.ui.popup('Error', 'Server replied with unknown error: ' + e + '. Try again later', 'OK', function() {
+                    self.ui.show_me();
+                });
             break
         }
     });
