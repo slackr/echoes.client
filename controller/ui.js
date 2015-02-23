@@ -522,7 +522,10 @@ EchoesUi.prototype.popup = function(title, message, yes_text, no_text, yes_callb
         this.ui.popup.title.hide();
     }
     if (typeof message == 'string') {
-        this.ui.popup.message.show().text(message);
+        if (message.length > 0) {
+            this.ui.popup.message.text(message);
+        }
+        this.ui.popup.message.show();
     } else {
         this.ui.popup.message.hide();
     }
