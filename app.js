@@ -98,7 +98,8 @@ $(document).ready(function() {
         // change input focus depending on what window is visible
         if (! (event.ctrlKey
                || event.metaKey
-               || event.altKey)) {
+               || event.altKey
+               || $ui.ui.popup.window.is(':visible'))) {
             if ($ui.ui.me.is(':visible')) {
                 $ui.ui.me_input.focus();
             } else {
@@ -151,7 +152,7 @@ $(document).ready(function() {
             $ui.error('Not connected :(');
             return;
         }
-        
+
         var endpoint = $ui.active_window().attr('windowname');
         var current_state = $ui.get_window_state(endpoint);
         $ui.log('window current encryption state: ' + current_state, 0);
