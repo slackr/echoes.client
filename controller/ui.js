@@ -534,8 +534,9 @@ EchoesUi.prototype.popup = function(title, message, yes_text, no_text, yes_callb
     this.ui.popup.yes.on('click', function() {
         if (typeof yes_callback == 'function') {
             yes_callback();
+        } else {
+            self.popup_close();
         }
-        self.popup_close();
     });
 
     if (no_text) {
@@ -543,18 +544,17 @@ EchoesUi.prototype.popup = function(title, message, yes_text, no_text, yes_callb
         this.ui.popup.no.on('click', function() {
             if (typeof no_callback == 'function') {
                 no_callback();
+            } else {
+                self.popup_close();
             }
-            self.popup_close();
         });
     } else {
         this.ui.popup.no.hide();
     }
 
     this.ui.popup.window.show();
-
-    // center div
-    this.ui.popup.wrapper.css('margin-top', -this.ui.popup.wrapper.outerHeight()/2 + 'px');
-    this.ui.popup.wrapper.css('margin-left', -this.ui.popup.wrapper.outerWidth()/2 + 'px');}
+    this.popup_center();
+}
 
 /**
  * Close the popup window
@@ -563,4 +563,10 @@ EchoesUi.prototype.popup = function(title, message, yes_text, no_text, yes_callb
  */
 EchoesUi.prototype.popup_close = function() {
     this.ui.popup.window.hide();
+}
+
+EchoesUi.prototype.popup_center = function() {
+    // center div
+    this.ui.popup.wrapper.css('margin-top', -this.ui.popup.wrapper.outerHeight()/2 + 'px');
+    this.ui.popup.wrapper.css('margin-left', -this.ui.popup.wrapper.outerWidth()/2 + 'px');
 }
