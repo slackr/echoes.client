@@ -46,21 +46,11 @@ body {
     color: rgb(66, 133, 244);
 }
 
-#me, #popup_wrapper {
+#popup_wrapper {
     background-color: rgb(66, 133, 244);
     color: rgb(255, 255, 255);
-}
-
-#me_wrapper, #popup_wrapper {
-    color: rgb(232, 232, 232);
     font-size: 40px;
-
     border-bottom-color: rgb(255, 255, 255);
-}
-
-#me_input {
-    background: transparent;
-    color: rgb(255, 255, 255);
 }
 
 #close_lists, #popup {
@@ -83,6 +73,12 @@ body {
     color: rgb(66, 133, 244);
 }
 
+.register_field_input {
+    background: transparent;
+    color: rgb(255, 255, 255);
+    border-bottom-color: rgb(255, 255, 255);
+}
+
 .ui_echo {
     background-color: rgb(255, 255, 255);
     color: rgb(54, 54, 54);
@@ -97,6 +93,11 @@ body {
     opacity: 0.5;
 }
 
-::-webkit-input-placeholder {
-   opacity: 1 !important;
+.register_field_input::-webkit-input-placeholder {
+   color: white;
+   opacity: 0.8;
+}
+
+#popup_yes:hover, #popup_no:hover {
+    background-color: rgba(90, 90, 90, 0.5);
 }

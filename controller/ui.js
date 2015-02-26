@@ -26,10 +26,6 @@ function EchoesUi() {
         wall: $("#wall"),
         echoes: $("#echoes"),
         input: $('#echo_input'),
-        me_input: $('#me_input'),
-        me_message: $('#me_message'),
-        me_wrapper: $('#me_wrapper'),
-        me: $('#me'),
         current_window_name: $('#current_window_name'),
         buttons: {
             nicknames: $('#menu_nicknames'),
@@ -297,10 +293,6 @@ EchoesUi.prototype.add_nickname = function(nick) {
             .attr('windowname', nick)
             .text(nick)
 
-    if (nick == $me) {
-        nick_element.addClass('ui_window_me');
-    }
-
     this.ui.lists.nicknames.append(nick_element);
 }
 
@@ -436,42 +428,6 @@ EchoesUi.prototype.show_window = function(name) {
         self.scroll_down();
         self.ui.input.focus();
     });
-}
-
-/**
- * Displas the nickname input window and adjusts the placeholder value
- *
- * Default message = 'What do they call you?'
- *
- * @param   {string} message Message to display
- *
- * @returns {null}
- */
-EchoesUi.prototype.show_me = function(message) {
-    var self = this;
-    message = message || ')))';
-
-    this.ui.me_message.text('');
-
-    this.ui.me_input.focus();
-
-    this.ui.me.fadeIn('fast', function(){
-        self.ui.me_message.text(message);
-
-        // center div
-        self.ui.me_wrapper.css('margin-top', -self.ui.me_wrapper.outerHeight()/2 + 'px');
-        self.ui.me_wrapper.css('margin-left', -self.ui.me_wrapper.outerWidth()/2 + 'px');
-    });
-}
-
-/**
- * Hides the nickname input window
- *
- * @returns {null}
- */
-EchoesUi.prototype.hide_me = function() {
-    //this.ui.me_input.val(':)');
-    this.ui.me.fadeOut('fast');
 }
 
 /**

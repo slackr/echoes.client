@@ -153,4 +153,6 @@ EchoesStorage.prototype.clear = function(callback) {
             }
         break;
     }
+
+    this.log('storage of type: ' + this.store_type + ' was cleared', 1);
 }

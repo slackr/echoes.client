@@ -17,6 +17,7 @@ function EchoesClient() {
     this.socket = null; // socket.io object ref
     this.ui = null; // ui object ref
     this.crypto = null; // crypto object ref
+    this.id = null; // crypto object ref
 
     /**
      * @type Object A hash of nicknames and their imported keys/symkeys and keysent status
@@ -39,10 +40,21 @@ EchoesClient.prototype.constructor = EchoesClient;
  * @returns {null}
  */
 EchoesClient.prototype.execute_command = function(params) {
+    var self = this;
     var command = params[0];
     params.shift();
 
     switch (command) {
+        case '/clear_storage':
+        case '/storage_clear':
+            this.ui.popup('Storage', 'Are you sure you want to clear the app storage? Identity will be lost...', 'CANCEL', 'CLEAR STORAGE', null, function() {
+                console.log('clear!');
+                self.id.storage.clear();
+                self.ui.popup('Storage', 'The storage was cleared.', 'NEW IDENTITY', function() {
+                    self.register_show();
+                });
+            });
+        break;
         case '/config':
             switch(params[0]) {
                 case 'LOG_LEVEL':
@@ -70,14 +82,14 @@ EchoesClient.prototype.execute_command = function(params) {
         case '/window':
         case '/query':
             var nick = params[0];
-            this.socket.emit('/pm', nick);
+            this.socket.sio.emit('/pm', nick);
         break;
         case '/echo':
             var chan = params[0];
             var echo = params[1];
 
-            this.ui.echo($me + ' ))) ' + echo);
-            this.socket.emit('/echo', { echo: echo, to: chan });
+            this.ui.echo(this.id.identity + ' ))) ' + echo);
+            this.socket.sio.emit('/echo', { echo: echo, to: chan });
         break;
         case '/eecho':
             var nick = params[0];
@@ -92,7 +104,7 @@ EchoesClient.prototype.execute_command = function(params) {
             this.keyx_off(params[0], true);
         break;
         default:
-            this.socket.emit(command, params);
+            this.socket.sio.emit(command, params);
             this.log('passed unhandled command to server: ' + command + ' ' + params.join(' '), 0);
         break
     }
@@ -291,7 +303,7 @@ EchoesClient.prototype.send_encrypted_echo = function(nick, echo) {
     c.encrypt(echo, this.get_nickchain_property(nick, 'public_key'), this.get_nickchain_property(nick, 'symkey')).then(function() {
         var and_echoes = false;
 
-        self.socket.emit('/echo', { // bypass execute_command for encrypted echoes, we'll write it on the wall manually below
+        self.socket.sio.emit('/echo', { // bypass execute_command for encrypted echoes, we'll write it on the wall manually below
             type: 'encrypted',
             to: nick,
             echo: c.encrypted_segments, // an array of base64 encoded segments
@@ -300,7 +312,7 @@ EchoesClient.prototype.send_encrypted_echo = function(nick, echo) {
         if (self.ui.get_window(nick).length == 0) {
             and_echoes = true;
         }
-        self.ui.echo($me + ' ))) [encrypted] ' + echo, nick, and_echoes);
+        self.ui.echo(self.id.identity + ' ))) [encrypted] ' + echo, nick, and_echoes);
     }).catch(function(e) {
         self.ui.error({ error: 'Encrypt operation failed on echo to ' + nick, debug: e.toString() });
     });
@@ -325,7 +337,7 @@ EchoesClient.prototype.keyx_off = function(endpoint, inform_endpoint) {
     this.update_encrypt_state(endpoint);
 
     if (inform_endpoint) {
-        this.socket.emit('!keyx_off', {
+        this.socket.sio.emit('!keyx_off', {
             to: endpoint
         });
     }
@@ -517,7 +529,7 @@ EchoesClient.prototype.keyx_send_key = function(endpoint) {
         symkey: this.get_nickchain_property(endpoint, 'encrypted_symkey'), // generated after import of pubkey in keyx_import()
     }
 
-    this.socket.emit('!keyx', broadcast);
+    this.socket.sio.emit('!keyx', broadcast);
 }
 
 /**
@@ -640,4 +652,126 @@ EchoesClient.prototype.wipe_nickchain = function(nick) {
 EchoesClient.prototype.wipe_all_nickchains = function() {
     this.nickchain = {};
     this.log('wiped all nickchains', 0);
+}
+
+/**
+ * Display the registration window
+ *
+ * @returns {null}
+ */
+EchoesClient.prototype.register_show = function() {
+    var self = this;
+    this.ui.ui.popup.message.html('');
+
+    var fields = {
+        'Nickname': {
+            input_id: 'register_input_nickname',
+            focus: true,
+        },
+        'Your@email.com': {
+            input_id: 'register_input_email'
+        },
+    }
+
+
+    this.ui.ui.popup.message.append(
+        $('<div>')
+            .addClass('registration_message')
+            .attr('id', 'registration_message')
+            .text('')
+    );
+
+    for (var field in fields) {
+        this.ui.ui.popup.message.append(
+            $('<input>')
+                .addClass('register_field_input')
+                .attr('id', fields[field].input_id)
+                .attr('placeholder', field)
+        );
+        if (fields[field].focus) {
+            $(fields[field].input_id).focus();
+        }
+    }
+
+    this.ui.popup('New Nickname', '', 'REGISTER', 'CANCEL',
+        (function(self) {
+            return function() {
+                self.register_submit(self);
+            }
+        })(self)
+    );
+
+    this.ui.ui.popup.message.find('input:first').focus();
+}
+
+EchoesClient.prototype.register_submit = function(self) {
+    var register_data = {
+        identity: self.ui.ui.popup.message.find('#register_input_nickname').val(),
+        email: self.ui.ui.popup.message.find('#register_input_email').val(),
+        device: self.crypto.bytes_to_hex(self.crypto.new_iv(32)),
+    }
+    var registration_message = $('#registration_message');
+
+    self.log('starting registration for ' + JSON.stringify(register_data), 0);
+    return self.id.generate_signing_keypair().then(function(){
+        self.id.identity = register_data.identity;
+        self.id.device = register_data.device;
+        self.id.email = register_data.email;
+        self.id.register().then(function(){
+            self.log('registration successful for ' + JSON.stringify(register_data), 0);
+            registration_message.text('Successfully registered nickname: ' + self.id.identity);
+            self.ui.popup_center();
+            self.id.save_identity().then(function(){
+                self.connect();
+            }).catch(function(e){
+                registration_message.text(e);
+                self.ui.popup_center();
+            });
+        }).catch(function(e){
+            registration_message.text(e);
+            self.ui.popup_center();
+            self.log(e, 3);
+        });
+    }).catch(function(e){
+        self.log('failed to generate signing keypair for ' + JSON.stringify(register_data), 3);
+        registration_message.text(e);
+        self.ui.popup_center();
+    });
+}
+
+EchoesClient.prototype.connect = function() {
+    var self = this;
+    this.id.auth_request().then(function(){
+        self.id.auth_reply().then(function(){
+            self.ui.popup('Ready to connect','Hello ' + self.id.identity + '!', 'CONNECT', null, function() {
+                self.ui.status('Connecting...');
+
+                self.socket.initialize();
+                self.ui.popup_close();
+            });
+        }).catch(function(e){
+            self.ui.popup('Error','Failed to authenticate nickname: ' + self.id.identity + ' (' + e + ')', 'RETRY', 'NEW NICKNAME', function() {
+                self.connect();
+                self.ui.popup_close();
+            }, function() {
+                self.register_show();
+            });
+        })
+    }).catch(function(e){
+        self.ui.popup('Error','Failed to authenticate nickname: ' + self.id.identity + ' (' + e + ')', 'RETRY', 'NEW NICKNAME', function() {
+            self.connect();
+        }, function() {
+            self.register_show();
+        });
+    });
+}
+
+EchoesClient.prototype.is_connected = function() {
+    if (typeof this.socket == 'undefined'
+        || typeof this.socket.sio == 'undefined'
+        || ! this.socket.sio
+        || ! this.socket.sio.connected) {
+        return false;
+    }
+    return true;
 }

@@ -26,21 +26,14 @@ body {
     height: 100%;
 }
 
-#echo_input, #me_input {
+#echo_input {
     border: 0px;
     font-size: 25px;
+    width: 100%;
 }
 
-#echo_input:focus, #me_input:focus {
+#echo_input:focus {
     outline: none;
-}
-
-#echo_input {
-    width: 100%;
-}
-#me_input {
-    width: 100%;
-    text-align: center;
 }
 
 #wall > ul {
@@ -86,17 +79,6 @@ body {
     width: 100%;
     bottom: 0px;
     padding: 10px;
-}
-
-#me_wrapper {
-    padding: 5px;
-    border-bottom-width: 2px;
-    border-bottom-style: solid;
-    position: absolute;
-    width: 100%;
-}
-#me_message {
-    font-size: 25px;
 }
 
 #menu_channels, #menu_nicknames {
@@ -148,18 +130,12 @@ body {
     z-index: 99;
 }
 
-#me {
-    position: fixed;
-    height: 100%;
-    width: 100%;
-    z-index: 200;
-    display: block;
-}
-#me_wrapper, #popup_wrapper {
+#popup_wrapper {
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 400px;
+    width: 360px;
+    padding: 10px;
     text-align: center;
     word-wrap: break-word;
 }
@@ -173,21 +149,21 @@ body {
 }
 #popup_title {
     font-size: 25px;
-    padding: 20px;
+    padding: 10px;
     text-align: left;
     font-weight: bold;
 }
 #popup_message {
     font-size: 15px;
     text-align: left;
-    padding: 20px;
+    padding: 10px;
 }
 #popup_yes, #popup_no {
     display: inline-block;
-    padding: 20px;
+    padding: 10px;
     float: right;
     cursor: pointer;
-    font-size: 30px;
+    font-size: 25px;
 }
 #current_window_name {
     display: none;
@@ -216,4 +192,24 @@ body {
 
 #icon_unencrypted {
     fill: rgba(0, 0, 0, 0.5);
+}
+
+.register_field_container {
+    position: relative;
+    padding: 5px;
+}
+.register_field_label {
+    left: 0;
+    position: static;
+}
+.register_field_input {
+    /*right: 0;
+    position: absolute;*/
+    width: 100%;
+    outline: none;
+
+    border: 0px;
+    border-bottom-width: 2px;
+    border-bottom-style: solid;
+    padding: 10px 0px 10px 0px;
 }
