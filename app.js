@@ -64,11 +64,11 @@ $(document).ready(function() {
         if (! (event.ctrlKey
                || event.metaKey
                || event.altKey
-               || ! $client.ui.ui.popup.window.is(':visible'))) {
+               || $client.ui.ui.popup.window.is(':visible'))) {
             $client.ui.ui.input.focus();
         }
 
-        // on return keydown, if #me is visible, assume a new connection needs to be made
+        // on return keydown
         if (event.which == 13) {
             if ($client.ui.ui.popup.window.is(':visible')) {
                 if ($client.ui.ui.popup.yes.is(':visible')) {
