@@ -50,7 +50,7 @@ EchoesClient.prototype.execute_command = function(params) {
             this.ui.popup('Storage', 'Are you sure you want to clear the app storage? Identity will be lost...', 'CANCEL', 'CLEAR STORAGE', null, function() {
                 console.log('clear!');
                 self.id.storage.clear();
-                self.ui.popup('Storage', 'The storage was cleared.', 'NEW IDENTITY', function() {
+                self.ui.popup('Storage', 'The storage was cleared.', 'NEW NICKNAME', function() {
                     self.register_show();
                 });
             });
