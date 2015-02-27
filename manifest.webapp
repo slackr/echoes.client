@@ -1,0 +1,27 @@
+{
+    "name": "Echoes Encrypted Messaging",
+    "description": "echoes ))) end-to-end encrypted messaging",
+    "version": "0.1",
+    "default_locale": "en",
+    "installs_allowed_from": [
+        "*"
+    ],
+    "launch_path": "/view/ui.html",
+    "developer": {
+        "name": "Slacknet",
+        "url": "https://github.com/slackr/echoes.client"
+    },
+    "orientation": [ "portrait" ],
+    "type": "privileged",
+    "permissions": {
+        "systemXHR": {}
+    },
+    "icons": {
+        "16": "/app/assets/icon-16.png",
+        "24": "/app/assets/icon-24.png",
+        "32": "/app/assets/icon-32.png",
+        "48": "/app/assets/icon-48.png",
+        "64": "/app/assets/icon-64.png",
+        "128": "/app/assets/icon-128.png"
+    }
+}

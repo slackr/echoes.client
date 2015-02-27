@@ -90,6 +90,9 @@ EchoesIdentity.prototype.register = function() {
             type: "POST",
             url: AppConfig.PARALLAX_AUTH + '/register/',
             data: data,
+            xhrFields: {
+                mozSystem: true
+            },
             dataType: 'json',
         })
         .done(function (data) {
@@ -210,6 +213,9 @@ EchoesIdentity.prototype.auth_request = function() {
             type: "POST",
             url: AppConfig.PARALLAX_AUTH + '/auth-request/',
             data: data,
+            xhrFields: {
+                mozSystem: true
+            },
             dataType: 'json',
         })
         .done(function (data) {
@@ -268,6 +274,9 @@ EchoesIdentity.prototype.auth_reply = function() {
             type: "POST",
             url: AppConfig.PARALLAX_AUTH + '/auth-reply/',
             data: data,
+            xhrFields: {
+                mozSystem: true
+            },
             dataType: 'json',
         })
         .done(function (data) {
