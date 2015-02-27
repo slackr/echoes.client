@@ -31,6 +31,8 @@ EchoesClient.prototype.constructor = EchoesClient;
 /**
  * Process and execute a client command
  *
+ * First array element will be the command, the rest are the commands parameters
+ *
  * Example: ['/keyx','nick'] - ['/who'] - ['/eecho','nick','echo']
  *
  * If not handled locally, pass to server
@@ -152,7 +154,7 @@ EchoesClient.prototype.send_echo = function() {
 EchoesClient.prototype.join_channels = function() {
     var self = this;
 
-    this.log('Auto-joining channels...', 1);
+    this.log('Auto-joining previously joined channels...', 0);
     this.ui.joined_channels().each(function() {
         self.execute_command(['/join', $(this).attr('windowname')]);
     });
@@ -197,7 +199,7 @@ EchoesClient.prototype.keyx_derive_key = function(nick, private_key, public_key)
 }
 
 /**
- * Decrypts encrypted symkey from nick using private key
+ * (async) Decrypts encrypted symkey from nick using private key
  *
  * @param   {string} nick                           Nickchain to use
  * @param   {Array} encrypted_symkey_segments       Array of encrypted segments to pass to decrypt_asym
@@ -391,7 +393,7 @@ EchoesClient.prototype.keyx_import = function(data) {
                     });
                 } else {
                     self.log('key derivation skipped, no private key in keychain: ' + kc, 0);
-                    return Promise.resolve('public key import successful, derivation skipped (no private key)');
+                    return Promise.resolve();
                 }
             }
 
@@ -470,6 +472,7 @@ EchoesClient.prototype.keyx_new_key = function(endpoint, kc) {
 
             return self.crypto.hash(self.crypto.keychain[kc].exported.public_key).then(function() {
                 self.crypto.keychain[kc].exported.hash = self.crypto.resulting_hash.match(/.{1,8}/g).join(' ');
+                self.ui.status('Successfully generated new session key (' + kc + '): ' + self.crypto.keychain[kc].exported.hash);
                 if (typeof endpoint != 'undefined'
                     && endpoint != null) {
                     self.log('sending ' + kc + ' public key to endpoint: ' + endpoint, 0);
@@ -564,7 +567,7 @@ EchoesClient.prototype.update_encrypt_state = function(for_window) {
         this.ui.assets.encrypt[state].show();
     }
 
-    this.log('window ' + for_window + ' set to ' + state + ' s:' + sent_decrypt_key + ' r:' + received_encrypt_key);
+    this.log('window ' + for_window + ' set to ' + state + ' sent?:' + sent_decrypt_key + ' recv?:' + received_encrypt_key, 0);
 }
 
 /**
@@ -760,6 +763,7 @@ EchoesClient.prototype.connect = function() {
     }).catch(function(e){
         self.ui.popup('Error','Failed to authenticate nickname: ' + self.id.identity + ' (' + e + ')', 'RETRY', 'NEW NICKNAME', function() {
             self.connect();
+            self.ui.popup_close();
         }, function() {
             self.register_show();
         });
