@@ -707,6 +707,13 @@ EchoesClient.prototype.register_show = function() {
     this.ui.ui.popup.message.find('input:first').focus();
 }
 
+/**
+ * (async) Submit the registration request
+ *
+ * @param   {EchoesClient} self Self object reference
+ *
+ * @returns {Promise} Either a .resolve(null) or .reject('error message')
+ */
 EchoesClient.prototype.register_submit = function(self) {
     var register_data = {
         identity: self.ui.ui.popup.message.find('#register_input_nickname').val(),
@@ -742,6 +749,13 @@ EchoesClient.prototype.register_submit = function(self) {
     });
 }
 
+/**
+ * Initiate the authentication request
+ *
+ * If successful display popup with connect(), else register_show()
+ *
+ * @returns {null}
+ */
 EchoesClient.prototype.connect = function() {
     var self = this;
     this.id.auth_request().then(function(){
@@ -770,6 +784,11 @@ EchoesClient.prototype.connect = function() {
     });
 }
 
+/**
+ * Determine if client is connected to server
+ *
+ * @returns {bool} Is the client connected?
+ */
 EchoesClient.prototype.is_connected = function() {
     if (typeof this.socket == 'undefined'
         || typeof this.socket.sio == 'undefined'
