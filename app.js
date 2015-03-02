@@ -38,6 +38,14 @@ $(document).ready(function() {
     $client.crypto.does_browser_support('crypto');
     $client.crypto.does_browser_support('ec');
 
+    $.ajaxSetup({ // csp on openwebapp
+        xhr: function() {
+            return new window.XMLHttpRequest({
+               mozSystem: true
+            });
+        }
+    });
+
     /**
      * generate new key(s) if supported
      */
