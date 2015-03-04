@@ -80,7 +80,7 @@ body {
 .register_field_input {
     background: transparent;
     color: rgb(255, 255, 255);
-    border-bottom-color: rgb(255, 255, 255);
+    border-bottom-color: rgba(255, 255, 255, 0.3);
 }
 
 .ui_echo {
