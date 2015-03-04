@@ -29,6 +29,7 @@ function EchoesIdentity() {
     this.session_id = null;
     this.nonce = null;
     this.nonce_signature = null;
+    this.recovery_token = null;
     this.pubkey = null;
     this.privkey = null;
     this.imported = { privkey: null };
@@ -81,6 +82,7 @@ EchoesIdentity.prototype.register = function() {
         identity: this.identity,
         pubkey: this.pubkey,
         device: this.device,
+        recovery_token: this.recovery_token,
         email: this.email,
     }
 
@@ -95,6 +97,7 @@ EchoesIdentity.prototype.register = function() {
         .done(function (data) {
             switch (data.status) {
                 case 'success':
+                    self.log('registration reply incoming: ' + JSON.stringify(data), 0);
                     self.log('successfully registered identity: ' + self.identity, 1);
                     resolve();
                 break;
@@ -193,7 +196,7 @@ EchoesIdentity.prototype.save_identity = function() {
  * @see EchoesIdentity#load_identity
  * @see EchoesIdentity#nonce
  * @see EchoesIdentity#nonce_signature
- * @see EchoesIdentity#suth_reply
+ * @see EchoesIdentity#auth_reply
  *
  * @returns {Promise} Either a .resolve(null) or .reject('error message')
  */
@@ -287,6 +290,49 @@ EchoesIdentity.prototype.auth_reply = function() {
         .fail(function (err) {
             self.log('auth reply http fail: ' + JSON.stringify(err), 3);
             reject('Auth reply transport failure');
+        });
+    });
+}
+
+/**
+ * (async) Request a new recovery token
+ *
+ * Identity must be loaded first, this.device and this.identity must be set
+ *
+ * @returns {Promise} Either a .resolve(null) or .reject('error message')
+ */
+EchoesIdentity.prototype.recovery_token_request = function() {
+    var self = this;
+
+    var data = {
+        identity: this.identity,
+        device: this.device,
+        email: this.email,
+    }
+
+    return new Promise(function(resolve, reject) {
+        $.ajax({
+            type: "POST",
+            url: AppConfig.PARALLAX_AUTH + '/recovery-token/',
+            data: data,
+            dataType: 'json',
+        })
+        .done(function (data) {
+            switch (data.status) {
+                case 'success':
+                    self.log('recovery token reply: ' + JSON.stringify(data), 0);
+                    self.log('recovery token requested for ' + self.identity + '@' + self.device, 1);
+                    resolve();
+                    return true;
+                break;
+            }
+            self.log('recovery token request error: ' + data.message, 3);
+            reject(data.message + ': ' + (data.log || data.db_log));
+            return false;
+        })
+        .fail(function (err) {
+            self.log('recovery token request http fail: ' + JSON.stringify(err), 3);
+            reject('Recovery token request transport failure');
         });
     });
 }

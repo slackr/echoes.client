@@ -53,9 +53,15 @@ $(document).ready(function() {
         $client.id.load_identity().then(function() {
             $client.connect();
         }).catch(function(e) {
-            $client.ui.popup('Error','Failed to load identity from storage (' + e + ')', 'NEW NICKNAME', null, function() {
-                $client.register_show();
-            });
+            $client.id.device = $client.crypto.bytes_to_hex($client.crypto.new_iv(32));
+
+            $client.ui.popup('Identity', e, 'NEW', 'RECOVER',
+                function() {
+                    $client.register_show();
+                },
+                function() {
+                    $client.recovery_show();
+                });
         });
 
         $client.keyx_new_key(null, 'asym');
@@ -64,7 +70,9 @@ $(document).ready(function() {
         }
 
     } else {
-        $client.ui.popup('Error', 'Unsupported client :( Try Chrome or Firefox!', 'OK');
+        $client.ui.popup('Error', 'Unsupported client :( Try the latest Chrome or Firefox!', 'OK, I WILL', null, function() {
+            return false;
+        });
     }
 
     $(window).keydown(function(event) {

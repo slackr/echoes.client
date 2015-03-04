@@ -23,7 +23,6 @@ function EchoesClient() {
      * @type Object A hash of nicknames and their imported keys/symkeys and keysent status
      */
     this.nickchain = {};
-
 }
 EchoesClient.prototype = Object.create(EchoesObject.prototype);
 EchoesClient.prototype.constructor = EchoesClient;
@@ -50,11 +49,14 @@ EchoesClient.prototype.execute_command = function(params) {
         case '/clear_storage':
         case '/storage_clear':
             this.ui.popup('Storage', 'Are you sure you want to clear the app storage? Identity will be lost...', 'CANCEL', 'CLEAR STORAGE', null, function() {
-                console.log('clear!');
                 self.id.storage.clear();
-                self.ui.popup('Storage', 'The storage was cleared.', 'NEW NICKNAME', function() {
-                    self.register_show();
-                });
+                self.ui.popup('Storage', 'The storage was cleared.', 'NEW IDENTITY', 'RECOVER',
+                    function() {
+                        self.register_show();
+                    },
+                    function() {
+                        self.recovery_show();
+                    });
             });
         break;
         case '/config':
@@ -662,7 +664,7 @@ EchoesClient.prototype.wipe_all_nickchains = function() {
  *
  * @returns {null}
  */
-EchoesClient.prototype.register_show = function() {
+EchoesClient.prototype.register_show = function(initial_message) {
     var self = this;
     this.ui.ui.popup.message.html('');
 
@@ -670,19 +672,27 @@ EchoesClient.prototype.register_show = function() {
         'Nickname': {
             input_id: 'register_input_nickname',
             focus: true,
+            id_value: 'identity',
         },
         'Your@email.com': {
-            input_id: 'register_input_email'
+            input_id: 'register_input_email',
+            id_value: 'email',
+        },
+        'Your@email.com again': {
+            input_id: 'register_input_email_confirm',
+        },
+        'Recovery Token (if available)': {
+            input_id: 'register_input_recovery_token'
         },
     }
-
 
     this.ui.ui.popup.message.append(
         $('<div>')
             .addClass('registration_message')
             .attr('id', 'registration_message')
-            .text('')
+            .text(initial_message)
     );
+    var registration_message = $('#registration_message');
 
     for (var field in fields) {
         this.ui.ui.popup.message.append(
@@ -692,19 +702,28 @@ EchoesClient.prototype.register_show = function() {
                 .attr('placeholder', field)
         );
         if (fields[field].focus) {
-            $(fields[field].input_id).focus();
+            $('#' + fields[field].input_id).focus();
+        }
+        if (fields[field].id_value) {
+            $('#' + fields[field].input_id).val(this.id[fields[field].id_value]);
         }
     }
 
-    this.ui.popup('New Nickname', '', 'REGISTER', 'CANCEL',
-        (function(self) {
-            return function() {
-                self.register_submit(self);
-            }
-        })(self)
+    this.ui.popup('New Identity', '', 'REGISTER', 'RECOVER',
+        function() {
+            self.register_submit().catch(function(e) {
+                registration_message.text(e);
+            });
+        }
+        ,
+        function() {
+            self.recovery_show().catch(function(e) {
+                registration_message.text(e);
+            });
+        }
     );
 
-    this.ui.ui.popup.message.find('input:first').focus();
+    //this.ui.ui.popup.message.find('input:first').focus();
 }
 
 /**
@@ -714,12 +733,29 @@ EchoesClient.prototype.register_show = function() {
  *
  * @returns {Promise} Either a .resolve(null) or .reject('error message')
  */
-EchoesClient.prototype.register_submit = function(self) {
+EchoesClient.prototype.register_submit = function() {
+    var self = this;
     var register_data = {
         identity: self.ui.ui.popup.message.find('#register_input_nickname').val(),
         email: self.ui.ui.popup.message.find('#register_input_email').val(),
-        device: self.crypto.bytes_to_hex(self.crypto.new_iv(32)),
+        email_confirm: self.ui.ui.popup.message.find('#register_input_email_confirm').val(),
+        recovery_token: self.ui.ui.popup.message.find('#register_input_recovery_token').val(),
+        device: self.id.device,
     }
+
+    if (! register_data.identity) {
+        self.ui.ui.popup.message.find('#register_input_nickname').focus();
+        return Promise.reject('Please enter a valid nickname');
+    }
+    if (! register_data.email) {
+        self.ui.ui.popup.message.find('#register_input_email').focus();
+        return Promise.reject('Please enter a valid email address');
+    }
+    if (register_data.email !== register_data.email_confirm) {
+        self.ui.ui.popup.message.find('#register_input_email_confirm').focus();
+        return Promise.reject('The two email addresses do not match');
+    }
+
     var registration_message = $('#registration_message');
 
     self.log('starting registration for ' + JSON.stringify(register_data), 0);
@@ -727,6 +763,7 @@ EchoesClient.prototype.register_submit = function(self) {
         self.id.identity = register_data.identity;
         self.id.device = register_data.device;
         self.id.email = register_data.email;
+        self.id.recovery_token = register_data.recovery_token;
         self.id.register().then(function(){
             self.log('registration successful for ' + JSON.stringify(register_data), 0);
             registration_message.text('Successfully registered nickname: ' + self.id.identity);
@@ -750,6 +787,77 @@ EchoesClient.prototype.register_submit = function(self) {
 }
 
 /**
+ * Display the identity recovery window
+ *
+ * @returns {null}
+ */
+EchoesClient.prototype.recovery_show = function() {
+    var self = this;
+    this.ui.ui.popup.message.html('');
+
+    var fields = {
+        'Nickname': {
+            input_id: 'register_input_nickname',
+            focus: true,
+        },
+        "Email@address.com used during registration": {
+            input_id: 'register_input_email'
+        },
+    }
+
+    this.ui.ui.popup.message.append(
+        $('<div>')
+            .addClass('registration_message')
+            .attr('id', 'registration_message')
+            .text('')
+    );
+
+    var registration_message = $('#registration_message');
+
+    for (var field in fields) {
+        this.ui.ui.popup.message.append(
+            $('<input>')
+                .addClass('register_field_input')
+                .attr('id', fields[field].input_id)
+                .attr('placeholder', field)
+        );
+        if (fields[field].focus) {
+            $('#' + fields[field].input_id).focus();
+        }
+    }
+    this.ui.popup('Recover Identity', '', 'GET TOKEN', 'CANCEL',
+        function() {
+            self.id.identity = self.ui.ui.popup.message.find('#register_input_nickname').val();
+            self.id.email = self.ui.ui.popup.message.find('#register_input_email').val();
+
+            if (! self.id.identity) {
+                self.ui.ui.popup.message.find('#register_input_nickname').focus();
+                registration_message.text('Please enter a valid nickname');
+                return;
+            }
+            if (! self.id.email) {
+                self.ui.ui.popup.message.find('#register_input_email').focus();
+                registration_message.text('Please enter a valid email address');
+                return;
+            }
+
+            self.id.recovery_token_request().then(function(){
+                self.register_show('A recovery token has been emailed to you. Please enter it below to recover an existing identity.');
+            }).catch(function(e){
+                registration_message.text(e);
+                self.ui.popup_center();
+                self.log(e, 3);
+            });
+        },
+        function() {
+            self.register_show();
+        }
+    );
+
+    //this.ui.ui.popup.message.find('input:first').focus();
+}
+
+/**
  * Initiate the authentication request
  *
  * If successful display popup with connect(), else register_show()
@@ -760,14 +868,14 @@ EchoesClient.prototype.connect = function() {
     var self = this;
     this.id.auth_request().then(function(){
         self.id.auth_reply().then(function(){
-            self.ui.popup('Ready to connect','Hello ' + self.id.identity + '!', 'CONNECT', null, function() {
+            self.ui.popup('Ready','Hello ' + self.id.identity + '!', 'CONNECT', null, function() {
                 self.ui.status('Connecting...');
 
                 self.socket.initialize();
                 self.ui.popup_close();
             });
         }).catch(function(e){
-            self.ui.popup('Error','Failed to authenticate nickname: ' + self.id.identity + ' (' + e + ')', 'RETRY', 'NEW NICKNAME', function() {
+            self.ui.popup('Error','Failed to authenticate nickname: ' + self.id.identity + ' (' + e + ')', 'RETRY', 'NEW IENTITY', function() {
                 self.connect();
                 self.ui.popup_close();
             }, function() {
@@ -775,7 +883,7 @@ EchoesClient.prototype.connect = function() {
             });
         })
     }).catch(function(e){
-        self.ui.popup('Error','Failed to authenticate nickname: ' + self.id.identity + ' (' + e + ')', 'RETRY', 'NEW NICKNAME', function() {
+        self.ui.popup('Error','Failed to authenticate nickname: ' + self.id.identity + ' (' + e + ')', 'RETRY', 'NEW IDENTITY', function() {
             self.connect();
             self.ui.popup_close();
         }, function() {
