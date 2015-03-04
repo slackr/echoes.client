@@ -73,6 +73,10 @@ body {
     color: rgb(66, 133, 244);
 }
 
+.registration_message {
+    color: rgba(242, 196, 196, 1);
+}
+
 .register_field_input {
     background: transparent;
     color: rgb(255, 255, 255);
