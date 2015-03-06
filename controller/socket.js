@@ -151,11 +151,23 @@ EchoesSocket.prototype.attach_socket_events = function() {
 
             case 'pm':
                 self.client.ui.add_window(echo.from, 'nickname');
-                self.client.ui.echo(echo.from + ' ))) ' + echo.echo, echo.from);
+                self.client.ui.echo({
+                    type: 'in',
+                    echo: echo.echo,
+                    window: echo.from,
+                    nick: echo.from,
+                    broadcast: false,
+                });
             break;
             case 'all':
             case 'channel':
-                self.client.ui.echo(echo.from + ' ))) ' + echo.echo, echo.to);
+                self.client.ui.echo({
+                    type: 'in',
+                    echo: echo.echo,
+                    window: echo.to,
+                    nick: echo.to,
+                    broadcast: false,
+                });
             break;
         }
     });

@@ -92,7 +92,12 @@ EchoesClient.prototype.execute_command = function(params) {
             var chan = params[0];
             var echo = params[1];
 
-            this.ui.echo(this.id.identity + ' ))) ' + echo);
+            this.ui.echo({
+                nick: this.id.identity,
+                type: 'out',
+                echo: echo,
+            })
+
             this.socket.sio.emit('/echo', { echo: echo, to: chan });
         break;
         case '/eecho':
@@ -271,9 +276,20 @@ EchoesClient.prototype.decrypt_encrypted_echo = function(nick, echo) { // echo i
 
     this.ui.add_nickname(nick);
     c.decrypt(echo, this.crypto.keychain[kc].private_key, this.get_nickchain_property(nick, 'symkey')).then(function() {
-        self.ui.echo(nick + ' ))) [encrypted] ' + c.decrypted_text, nick, false);
+        self.ui.echo({
+            type: 'in',
+            avatar: '',
+            encrypted: true,
+            echo: c.decrypted_text,
+            window: nick,
+            nick: nick,
+            broadcast: false
+        });
     }).catch(function(e) {
-        self.ui.error({ error: 'Decrypt operation failed on echo from ' + nick, debug: kc + ': ' + e.toString() });
+        self.ui.error({
+            error: 'Could not decrypt echo from ' + nick,
+            debug: kc + ': ' + e.toString()
+        });
     });
 }
 
@@ -316,9 +332,21 @@ EchoesClient.prototype.send_encrypted_echo = function(nick, echo) {
         if (self.ui.get_window(nick).length == 0) {
             and_echoes = true;
         }
-        self.ui.echo(self.id.identity + ' ))) [encrypted] ' + echo, nick, and_echoes);
+
+        self.ui.echo({
+            type: 'out',
+            encrypted: true,
+            avatar: '',
+            echo: echo,
+            window: nick,
+            nick: nick,
+            broadcast: and_echoes,
+        });
     }).catch(function(e) {
-        self.ui.error({ error: 'Encrypt operation failed on echo to ' + nick, debug: e.toString() });
+        self.ui.error({
+            error: 'Encrypt operation failed on echo to ' + nick,
+            debug: e.toString()
+        });
     });
 }
 

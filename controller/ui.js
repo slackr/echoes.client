@@ -116,32 +116,99 @@ EchoesUi.prototype.scroll_down = function() {
 /**
  * Creates echo element on wall
  *
- * @param   {string} echo       Text to add to text node
- * @param   {string} where      Window name to display to, if null display in active window
- * @param   {bool} and_echoes   Also display in the echoes window
- * @param   {string} add_class  (default='ui_echo') A list of CSS classes separated by space to add to element
+ * echo object:
+ *
+ * echo = {
+ *  type: ['incoming','outgoing','status', 'error'],
+ *  echo: "message",
+ *  window: "windowname",
+ *  avatar: "avatar text",
+ *  encrypted: [0,1|true,false]
+ *  broadcast: [0,1|true,false], // sends to window specified and to )))
+ * }
+ *
+ *
+ * @param   {object} echo Object representing echo
  *
  * @returns {null}
  */
-EchoesUi.prototype.echo = function(echo, where, and_echoes, add_class) {
-    add_class = add_class || 'ui_echo';
-    where = (typeof where == 'string' ? where : $(this.active_window()).attr('windowname'));
-    and_echoes = (and_echoes && where != this.ui.echoes.attr('windowname') ? true : false);
+EchoesUi.prototype.echo = function(echo) {
+    echo.window = (typeof echo.window == 'string' ? echo.window : $(this.active_window()).attr('windowname'));
+    echo.broadcast = (echo.broadcast && echo.window != this.ui.echoes.attr('windowname') ? true : false);
+    echo.encrypted = echo.encrypted || false;
+    echo.avatar = echo.avatar || '';
+    echo.info = echo.info || (echo.nick ? echo.nick + ' @ ' : '') + (new Date).toLocaleString();
 
-    var li =
-        $('<li>')
-            .addClass(add_class)
+/*
+    <div class='convo'>
+    <div class='incoming sms msg unencrypted'>
+      <span class='avatar'></span>
+      <span class='bubble'>
+        <span class='msg-text'>This is a plaintext SMS. Unencrypted conversations are always SMS and have a plain jane, neutral gray backdrop.</span>
+        <span class='metadata'>Feb 6</span>
+      </span>
+    </div>
+*/
+    var avatar = echo.encrypted ? this.assets.encrypt.encrypted.parent().html() : this.assets.encrypt.unencrypted.parent().html();
+
+    var echo_class = '';
+    var echo_bubble_class = '';
+    var slide_direction = '';
+    var echo_extra_avatar_class = echo.encrypted ? 'ui_echo_avatar_encrypted' : 'ui_echo_avatar_unencrypted';
+    switch(echo.type) {
+        case 'in':
+            echo_class = 'ui_echo_in ui_echo';
+            echo_bubble_class = 'ui_echo_bubble';
+            slide_direction = 'left';
+        break;
+        case 'out':
+            echo_class = 'ui_echo_out ui_echo';
+            echo_bubble_class = 'ui_echo_bubble';
+            slide_direction = 'right';
+        break;
+        case 'error':
+            echo_class = 'ui_echo_in ui_echo';
+            echo_bubble_class = 'ui_error_bubble';
+            echo_extra_avatar_class = 'hidden';
+            slide_direction = 'left';
+        break;
+        case 'status':
+        default:
+            echo_class = 'ui_echo_in ui_echo';
+            echo_bubble_class = 'ui_status_bubble';
+            echo_extra_avatar_class = 'hidden';
+            slide_direction = 'left';
+        break;
+    }
+
+    var div =
+        $('<div>')
+            .addClass(echo_class)
             .hide()
-            .text(echo);
+            .append(
+                $('<span>')
+                    .addClass('ui_echo_avatar ' + echo_extra_avatar_class)
+                , $('<span>')
+                    .addClass(echo_bubble_class)
+                    .append(
+                        $('<span>')
+                            .addClass('ui_echo_text')
+                            .text(echo.echo)
+                        , $('<span>')
+                            .addClass('ui_echo_info')
+                            .text(echo.info)
+                    )
+            );
 
-    li.appendTo(this.get_window(where))
-        .fadeIn('fast');
+    div.appendTo(this.get_window(echo.window))
+        .show('slide', {direction: slide_direction}, 'fast');
 
-    if (and_echoes) {
-        li
+
+    if (echo.broadcast) {
+        div
             .clone()
-            .css('opacity', 1) // wtf is setting the opacity to 0?
-            .appendTo(this.get_window(this.ui.echoes.attr('windowname')));
+            .appendTo(this.get_window(this.ui.echoes.attr('windowname')))
+            .show('slide', {direction: slide_direction}, 'fast');
     }
 
     this.scroll_down();
@@ -156,7 +223,12 @@ EchoesUi.prototype.echo = function(echo, where, and_echoes, add_class) {
  * @returns {null}
  */
 EchoesUi.prototype.status = function(status, where, and_echoes) {
-    this.echo(status, where, and_echoes, ' ');
+    this.echo({
+        type: 'status',
+        echo: status,
+        window: where,
+        broadcast: and_echoes
+    });
 };
 
 /**
@@ -179,7 +251,13 @@ EchoesUi.prototype.error = function(error, where, and_echoes) {
     if (typeof error == 'object') {
         error_out = error.error + (AppConfig.LOG_LEVEL == 0 ? ' (' + error.debug + ')' : '');
     }
-    this.echo(error_out, where, and_echoes, 'ui_error');
+
+    this.echo({
+        type: 'error',
+        echo: error_out,
+        window: where,
+        broadcast: and_echoes
+    });
 };
 
 /**
@@ -188,7 +266,7 @@ EchoesUi.prototype.error = function(error, where, and_echoes) {
  * @returns {object[]} jQuery object array (hopefully just one...) or []
  */
 EchoesUi.prototype.active_window = function() {
-    return this.ui.wall.find('ul:visible');
+    return this.ui.wall.find('div:visible:first');
 }
 
 /**
@@ -197,7 +275,7 @@ EchoesUi.prototype.active_window = function() {
  * @returns {object[]} jQuery object array or []
  */
 EchoesUi.prototype.joined_channels = function() {
-    return this.ui.wall.find('ul[windowtype="channel"]');
+    return this.ui.wall.find('div[windowtype="channel"]');
 }
 
 /**
@@ -206,7 +284,7 @@ EchoesUi.prototype.joined_channels = function() {
  * @returns {object[]} jQuery object array or []
  */
 EchoesUi.prototype.opened_windows = function() {
-    return this.ui.wall.find('ul');
+    return this.ui.wall.find('div');
 }
 
 /**
@@ -239,7 +317,7 @@ EchoesUi.prototype.remove_nickname = function(nick) {
 EchoesUi.prototype.clear_channels = function() {
     var self = this;
 
-    this.ui.wall.find('ul[windowtype="channel"]').each(function() {
+    this.ui.wall.find('div[windowtype="channel"]').each(function() {
         self.ui.lists.channels.find('li[windowname="' + $(this).attr('windowname') + '"]').remove();
     });
 }
@@ -312,12 +390,12 @@ EchoesUi.prototype.add_nickname = function(nick) {
 EchoesUi.prototype.add_window = function(name, type) {
     type = type || 'channel';
 
-    if (this.ui.wall.find('ul[windowname="' + name + '"]').length > 0) {
+    if (this.ui.wall.find('div[windowname="' + name + '"]').length > 0) {
         return;
     }
 
     this.ui.wall.append(
-        $('<ul>')
+        $('<div>')
             .attr('windowname', name)
             .attr('windowtype', type)
             .css('display', 'none')
@@ -336,7 +414,7 @@ EchoesUi.prototype.add_window = function(name, type) {
  * @returns {null}
  */
 EchoesUi.prototype.remove_window = function(name) {
-    this.ui.wall.find('ul[windowname="' + name + '"]').remove();
+    this.ui.wall.find('div[windowname="' + name + '"]').remove();
 }
 
 /**
@@ -349,7 +427,7 @@ EchoesUi.prototype.remove_window = function(name) {
  * @returns {object[]} jQuery object array of window or [] if nothing found
  */
 EchoesUi.prototype.get_window = function(name) {
-    return this.ui.wall.find('ul[windowname="' + name + '"]');
+    return this.ui.wall.find('div[windowname="' + name + '"]');
 }
 
 /**
@@ -410,10 +488,10 @@ EchoesUi.prototype.show_window = function(name) {
     this.ui.lists.channels.find('li[windowname="' + name + '"]').addClass('ui_selected_window');
     this.ui.lists.nicknames.find('li[windowname="' + name + '"]').addClass('ui_selected_window');
 
-    this.ui.wall.find('ul:visible').hide();
+    this.ui.wall.find('div:visible:first').hide();
     self.ui.current_window_name.fadeOut('fast');
 
-    this.ui.wall.find('ul[windowname="' + name + '"]').fadeIn('fast', function() {
+    this.ui.wall.find('div[windowname="' + name + '"]').fadeIn('fast', function() {
 
         self.ui.current_window_name.text(name);
 
@@ -521,6 +599,11 @@ EchoesUi.prototype.popup_close = function() {
     this.ui.popup.window.hide();
 }
 
+/**
+ * Align popup wrapper to center of window
+ *
+ * @returns {null}
+ */
 EchoesUi.prototype.popup_center = function() {
     // center div
     this.ui.popup.wrapper.css('margin-top', -this.ui.popup.wrapper.outerHeight()/2 + 'px');
