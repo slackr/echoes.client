@@ -16,9 +16,11 @@ function EchoesUi() {
 
     this.assets = {
         encrypt: {
-            unencrypted: $('#icon_unencrypted'),
-            encrypted: $('#icon_encrypted'),
-            oneway: $('#icon_oneway'),
+            icon_class: {
+                unencrypted: 'ui_echo_unencrypted_icon',
+                encrypted: 'ui_echo_encrypted_icon',
+                oneway: 'ui_echo_oneway_icon',
+            }
         }
     }
 
@@ -149,12 +151,11 @@ EchoesUi.prototype.echo = function(echo) {
       </span>
     </div>
 */
-    var avatar = echo.encrypted ? this.assets.encrypt.encrypted.parent().html() : this.assets.encrypt.unencrypted.parent().html();
 
     var echo_class = '';
     var echo_bubble_class = '';
     var slide_direction = '';
-    var echo_extra_avatar_class = echo.encrypted ? 'ui_echo_avatar_encrypted' : 'ui_echo_avatar_unencrypted';
+    var echo_extra_avatar_class = echo.encrypted ? this.assets.encrypt.icon_class.encrypted : this.assets.encrypt.icon_class.unencrypted;
     switch(echo.type) {
         case 'in':
             echo_class = 'ui_echo_in ui_echo';
@@ -184,10 +185,10 @@ EchoesUi.prototype.echo = function(echo) {
     var div =
         $('<div>')
             .addClass(echo_class)
-            .hide()
             .append(
                 $('<span>')
                     .addClass('ui_echo_avatar ' + echo_extra_avatar_class)
+                    .text(echo.avatar)
                 , $('<span>')
                     .addClass(echo_bubble_class)
                     .append(
@@ -200,15 +201,13 @@ EchoesUi.prototype.echo = function(echo) {
                     )
             );
 
-    div.appendTo(this.get_window(echo.window))
-        .show('slide', {direction: slide_direction}, 'fast');
+    div.appendTo(this.get_window(echo.window));
 
 
     if (echo.broadcast) {
         div
             .clone()
-            .appendTo(this.get_window(this.ui.echoes.attr('windowname')))
-            .show('slide', {direction: slide_direction}, 'fast');
+            .appendTo(this.get_window(this.ui.echoes.attr('windowname')));
     }
 
     this.scroll_down();
@@ -454,6 +453,11 @@ EchoesUi.prototype.set_window_state = function(state, on_window) { // encrypted,
     }
 
     this.get_window(on_window).attr('encryptionstate', state);
+
+    if (on_window == this.active_window().attr('windowname')) {
+        this.log('setting active window icon to ' + state, 0);
+        this.ui.buttons.encrypt.attr('class', this.assets.encrypt.icon_class[state]);
+    }
 }
 
 /**
@@ -510,20 +514,20 @@ EchoesUi.prototype.show_window = function(name) {
 
 /**
  * Show or hide the encryption icon near the input.
- * Slides the input cursor 30px on show()
+ * Slides the input cursor according to the encrypt buttons width
  *
  * @param   {bool} on_off On or off
  *
  * @returns {null}
  */
 EchoesUi.prototype.toggle_encrypt_icon = function(on_off) {
-    var padding = '35px';
+    var padding = this.ui.buttons.encrypt.outerWidth() + 'px';
     if (on_off) {
-        this.ui.buttons.encrypt.fadeIn('fast');
+        this.ui.buttons.encrypt.show('slide', {direction: 'left'}, 'fast');
         this.ui.input.css('padding-left', padding);
     } else {
         this.ui.input.css('padding-left', '0px');
-        this.ui.buttons.encrypt.fadeOut('fast');
+        this.ui.buttons.encrypt.hide('slide', {direction: 'left'}, 'fast');
     }
 }
 

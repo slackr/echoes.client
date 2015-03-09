@@ -568,8 +568,6 @@ EchoesClient.prototype.keyx_send_key = function(endpoint) {
 /**
  * Determines the encryption state for a window and sets the window state accordingly
  *
- * Changes the icon to the matching encryption state asset
- *
  * @see EchoesUi#set_window_state
  *
  * @param   {string} for_window Window name
@@ -588,14 +586,6 @@ EchoesClient.prototype.update_encrypt_state = function(for_window) {
     }
 
     this.ui.set_window_state(state, for_window);
-
-    if (for_window == this.ui.active_window().attr('windowname')) {
-        this.log('setting active window icon to ' + state, 0);
-        for (var icon in this.ui.assets.encrypt) {
-            this.ui.assets.encrypt[icon].hide();
-        }
-        this.ui.assets.encrypt[state].show();
-    }
 
     this.log('window ' + for_window + ' set to ' + state + ' sent?:' + sent_decrypt_key + ' recv?:' + received_encrypt_key, 0);
 }
