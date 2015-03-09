@@ -21,6 +21,11 @@ function EchoesUi() {
                 encrypted: 'ui_echo_encrypted_icon',
                 oneway: 'ui_echo_oneway_icon',
             }
+        },
+        echo: {
+            icon_class: {
+                broadcast: 'ui_echo_broadcast_icon',
+            }
         }
     }
 
@@ -33,6 +38,7 @@ function EchoesUi() {
             nicknames: $('#menu_nicknames'),
             channels: $('#menu_channels'),
             encrypt: $('#encrypt'),
+            send: $('#send'),
         },
         lists: {
             close_lists: $('#close_lists'),
@@ -125,6 +131,7 @@ EchoesUi.prototype.scroll_down = function() {
  *  echo: "message",
  *  window: "windowname",
  *  avatar: "avatar text",
+ *  nick: "nick to add to echo_info",
  *  encrypted: [0,1|true,false]
  *  broadcast: [0,1|true,false], // sends to window specified and to )))
  * }
@@ -152,10 +159,19 @@ EchoesUi.prototype.echo = function(echo) {
     </div>
 */
 
+    var window_object = this.get_window(echo.window);
+
     var echo_class = '';
     var echo_bubble_class = '';
     var slide_direction = '';
-    var echo_extra_avatar_class = echo.encrypted ? this.assets.encrypt.icon_class.encrypted : this.assets.encrypt.icon_class.unencrypted;
+    var echo_extra_avatar_class = '';
+
+    if (window_object.attr('windowtype') == 'nickname') {
+        echo_extra_avatar_class = echo.encrypted ? this.assets.encrypt.icon_class.encrypted : this.assets.encrypt.icon_class.unencrypted;
+    } else {
+        echo_extra_avatar_class = this.assets.echo.icon_class.broadcast;
+    }
+
     switch(echo.type) {
         case 'in':
             echo_class = 'ui_echo_in ui_echo';
@@ -201,8 +217,7 @@ EchoesUi.prototype.echo = function(echo) {
                     )
             );
 
-    div.appendTo(this.get_window(echo.window));
-
+    div.appendTo(window_object);
 
     if (echo.broadcast) {
         div
@@ -432,6 +447,8 @@ EchoesUi.prototype.get_window = function(name) {
 /**
  * Sets the encryptionstate property for a window
  *
+ * Also sets the encryption icon if on_window is active
+ *
  * The allowed states:
  * encrypted
  * unencrypted
@@ -442,7 +459,7 @@ EchoesUi.prototype.get_window = function(name) {
  *
  * @returns {null}
  */
-EchoesUi.prototype.set_window_state = function(state, on_window) { // encrypted, unencrypted, oneway
+EchoesUi.prototype.set_window_state = function(state, on_window) {
     switch (state) {
         case 'encrypted':
         case 'oneway':

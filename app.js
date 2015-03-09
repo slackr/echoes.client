@@ -99,13 +99,12 @@ $(document).ready(function() {
                 }
             }
 
-            if (! $client.is_connected()) {
-                $client.ui.error('Not connected :(');
-                return;
-            }
-
-            $client.send_echo();
+            $client.ui.ui.buttons.send.click();
         }
+    });
+
+    $client.ui.ui.buttons.send.click(function() {
+        $client.send_echo();
     });
 
     $client.ui.ui.buttons.encrypt.click(function() {

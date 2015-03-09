@@ -112,6 +112,9 @@ body {
     font-weight: normal;
 }
 
-#popup_yes:hover, #popup_no:hover {
-    background-color: rgba(90, 90, 90, 0.5);
+#popup_yes:hover
+,#popup_no:hover
+,#send:hover
+,#encrypt:hover {
+    background-color: rgba(0, 0, 0, 0.1);
 }

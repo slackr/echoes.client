@@ -130,6 +130,11 @@ EchoesClient.prototype.execute_command = function(params) {
  * @returns {null}
  */
 EchoesClient.prototype.send_echo = function() {
+    if (! this.is_connected()) {
+        this.ui.error('Not connected :(');
+        return;
+    }
+
     var echo = this.ui.ui.input.val();
     var split = echo.trim().split(' ');
     var to = this.ui.active_window().attr('windowname');
