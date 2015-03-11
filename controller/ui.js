@@ -530,6 +530,26 @@ EchoesUi.prototype.show_window = function(name) {
 }
 
 /**
+ * Simluate a click on wither a nickname or channel window
+ *
+ * @param   {string} name Window name to click
+ *
+ * @returns {null}
+ */
+EchoesUi.prototype.click_window = function(name) {
+    win_object = this.ui.lists.nicknames.find('li[windowname="' + name + '"]');
+    if (win_object.length == 0) {
+        win_object = this.ui.lists.channels.find('li[windowname="' + name + '"]');
+    }
+    
+    if (win_object.length > 0) {
+        win_object.click();
+    } else {
+        this.error('No such window: ' + name);
+    }
+}
+
+/**
  * Show or hide the encryption icon near the input.
  * Slides the input cursor according to the encrypt buttons width
  *

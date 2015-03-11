@@ -82,11 +82,19 @@ EchoesClient.prototype.execute_command = function(params) {
         case '/pm':
         case '/msg':
         case '/private':
-        case '/win':
-        case '/window':
         case '/query':
             var nick = params[0];
             this.socket.sio.emit('/pm', nick);
+        break;
+        case '/w':
+        case '/win':
+        case '/window':
+            var win = params[0];
+            if (win) {
+                this.ui.click_window(win);
+            } else {
+                this.ui.status('Current window: ' + this.ui.active_window().attr('windowname'));
+            }
         break;
         case '/echo':
             var chan = params[0];
@@ -898,7 +906,7 @@ EchoesClient.prototype.connect = function() {
                 self.ui.popup_close();
             });
         }).catch(function(e){
-            self.ui.popup('Error','Failed to authenticate nickname: ' + self.id.identity + ' (' + e + ')', 'RETRY', 'NEW IENTITY', function() {
+            self.ui.popup('Error','Failed to authenticate nickname: ' + self.id.identity + ' (' + e + ')', 'RETRY', 'NEW NICKNAME', function() {
                 self.connect();
                 self.ui.popup_close();
             }, function() {
@@ -906,7 +914,7 @@ EchoesClient.prototype.connect = function() {
             });
         })
     }).catch(function(e){
-        self.ui.popup('Error','Failed to authenticate nickname: ' + self.id.identity + ' (' + e + ')', 'RETRY', 'NEW IDENTITY', function() {
+        self.ui.popup('Error','Failed to authenticate nickname: ' + self.id.identity + ' (' + e + ')', 'RETRY', 'NEW NICKNAME', function() {
             self.connect();
             self.ui.popup_close();
         }, function() {
