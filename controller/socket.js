@@ -75,8 +75,6 @@ EchoesSocket.prototype.attach_socket_events = function() {
 
     this.sio.on('*me', function(me) {
         self.client.ui.status('Hi ' + self.client.id.identity + ', /join a channel and say something!', self.client.ui.ui.echoes.attr('windowname'));
-
-        self.client.execute_command(['/who']);
     });
 
     this.sio.on('*pm', function(nick) {
@@ -91,7 +89,16 @@ EchoesSocket.prototype.attach_socket_events = function() {
 
         if (nick == self.client.id.identity) {
             self.client.ui.add_channel(chan);
+            self.client.execute_command(['/who', chan]);
             self.client.ui.show_window(chan);
+        } else {
+            var nicklist = self.client.ui.get_window(chan).find('ul:first');
+            nicklist.find('li[nickname="' + nick + '"]').remove();
+            nicklist.append(
+                $('<li>')
+                    .attr('nickname', nick)
+            );
+            self.client.ui.refresh_nicklist(chan);
         }
 
         self.client.ui.status((nick == self.client.id.identity ? 'You have' : nick) + ' joined ' + chan, chan);
@@ -102,11 +109,20 @@ EchoesSocket.prototype.attach_socket_events = function() {
         var reason = part.reason;
         var and_echoes = false;
 
+        var nicklist = self.client.ui.get_window(chan).find('ul:first');
+        nicklist.find('li[nickname="' + nick + '"]').remove();
+
         if (nick == self.client.id.identity) {
             self.client.ui.remove_channel(chan);
-            self.client.ui.show_window(self.client.ui.ui.echoes.attr('windowname'));
-            and_echoes = true;
+
+            if (self.client.ui.active_window().attr('windowname') == chan) {
+                self.client.ui.show_window(self.client.ui.ui.echoes.attr('windowname'));
+                and_echoes = true;
+            }
+        } else {
+            self.client.ui.refresh_nicklist(chan);
         }
+
         self.client.ui.status((nick == self.client.id.identity ? 'You have' : nick) + ' parted ' + chan + (reason ? ' (' + reason + ')' : ''), chan, and_echoes);
     });
 
@@ -121,25 +137,37 @@ EchoesSocket.prototype.attach_socket_events = function() {
         self.client.ui.status('Channel listing: ' + list.channels.join(', '), null, true);
     });
     this.sio.on('*who', function(who) {
-        self.client.ui.clear_nicknames();
-        for (var n in who.nicknames) {
-            self.client.ui.add_nickname(who.nicknames[n]);
+        var nicks = who.nicknames;
+        var chan = who.channel;
+        var nicklist = self.client.ui.get_window(chan).find('ul:first');
+
+        nicklist.html('');
+        for (var n in nicks) {
+            nicklist.append(
+                $('<li>')
+                    .attr('nickname', nicks[n])
+            );
         }
 
-        self.client.ui.ui.lists.nicknames.find('li[windowname="' + self.client.id.identity + '"]').addClass('ui_window_me');
-        self.client.ui.status("Who's online? " + who.nicknames.join(', '), null, true);
-        if (who.nicknames.length > 1 && ! self.client.ui.ui.lists.nicknames.is(':visible')) {
-            self.client.ui.ui.buttons.nicknames.click();
-        }
+        self.client.ui.refresh_nicklist(chan);
+        self.client.ui.status("Who's on " + chan + "? "  + nicks.join(', '), chan, true);
     });
     this.sio.on('*connect', function(who) {
-        self.client.ui.add_nickname(who.nickname);
-        self.client.ui.status(who.nickname + ' connected!', who.nickname, true);
+        var nick = who.nickname;
+
+        self.client.ui.status(nick + ' connected!', nick, true);
     });
     this.sio.on('*disconnect', function(who) {
-        self.client.ui.remove_nickname(who.nickname);
-        self.client.keyx_off(who.nickname, false);
-        self.client.ui.status(who.nickname + ' disconnected!', who.nickname, true);
+        var nick = who.nickname;
+
+        self.client.ui.ui.wall.find('div[windowtype="channel"]').each(function() {
+            var nicklist = $(this).find('ul:first');
+            nicklist.find('li[nickname="' + nick + '"]').remove();
+        });
+        self.client.ui.remove_nickname(nick);
+
+        self.client.keyx_off(nick, false);
+        self.client.ui.status(nick + ' disconnected!', nick, true);
     });
 
     this.sio.on('*echo', function(echo) {
@@ -165,7 +193,7 @@ EchoesSocket.prototype.attach_socket_events = function() {
                     type: 'in',
                     echo: echo.echo,
                     window: echo.to,
-                    nick: echo.to,
+                    nick: echo.from,
                     broadcast: false,
                 });
             break;
@@ -225,27 +253,27 @@ EchoesSocket.prototype.attach_socket_events = function() {
         self.log('fatal! ' + e, 3);
         switch (e) {
             case 'nick_exists':
-                self.client.ui.popup('Error', 'Nickname already connected :( Please try again', 'OK', null, function() {
+                self.client.ui.popup('Error', 'Nickname already connected :( Please try again', 'RETRY', null, function() {
                     self.client.connect();
                 })
             break
             case 'nick_invalid':
-                self.client.ui.popup('Error', 'Nickname is invalid :( Please try again', 'OK', null, function() {
+                self.client.ui.popup('Error', 'Nickname is invalid :( Please try again', 'RETRY', null, function() {
                     self.client.connect();
                 })
             break;
             case 'auth_invalid_session':
-                self.client.ui.popup('Error', 'Invalid session for ' + self.client.id.identity + '. Please log in again!', 'OK', null, function() {
+                self.client.ui.popup('Error', 'Invalid session for ' + self.client.id.identity + '. Please log in again!', 'RETRY', null, function() {
                     self.client.connect();
                 });
             break
             case 'auth_http_error':
-                self.client.ui.popup('Error', 'Server failed to verify identity for ' + self.client.id.identity + '. Try again later', 'OK', null, function() {
+                self.client.ui.popup('Error', 'Server failed to verify identity for ' + self.client.id.identity + '. Try again later', 'RETRY', null, function() {
                     self.client.connect();
                 });
             break
             default:
-                self.client.ui.popup('Error', 'Server replied with an unknown error: ' + e + '. Try again later', 'OK', null, function() {
+                self.client.ui.popup('Error', 'Server replied with an unknown error: ' + e + '. Try again later', 'RETRY', null, function() {
                     self.client.connect();
                 });
             break

@@ -103,7 +103,7 @@ EchoesUi.prototype.attach_events = function() {
         self.show_window(nick);
         self.ui.lists.close_lists.click();
 
-        if (typeof  self.ui.show_window_callback == 'function') {
+        if (typeof self.ui.show_window_callback == 'function') {
             self.ui.show_window_callback(nick);
         }
     });
@@ -413,6 +413,10 @@ EchoesUi.prototype.add_window = function(name, type) {
             .attr('windowname', name)
             .attr('windowtype', type)
             .css('display', 'none')
+            .append(
+                $('<ul>') // used for window hidden storage, such as nicklist
+                    .css('display', 'none')
+            )
     );
 
     if (type == 'nickname') {
@@ -510,16 +514,24 @@ EchoesUi.prototype.show_window = function(name) {
     this.ui.lists.nicknames.find('li[windowname="' + name + '"]').addClass('ui_selected_window');
 
     this.ui.wall.find('div:visible:first').hide();
-    self.ui.current_window_name.fadeOut('fast');
+    this.ui.current_window_name.fadeOut('fast');
 
     this.ui.wall.find('div[windowname="' + name + '"]').fadeIn('fast', function() {
-
         self.ui.current_window_name.text(name);
 
-        if ($(this).attr('windowtype') == 'nickname') {
-            self.toggle_encrypt_icon(true);
-        } else {
-            self.toggle_encrypt_icon(false);
+        switch($(this).attr('windowtype')) {
+            case 'nickname':
+                self.toggle_encrypt_icon(true);
+                self.clear_nicknames();
+                self.add_nickname(name);
+            break;
+            case 'channel':
+                self.toggle_encrypt_icon(false);
+                self.refresh_nicklist(name);
+            break;
+            default:
+                self.clear_nicknames();
+            break;
         }
 
         self.ui.current_window_name.fadeIn('fast');
@@ -527,6 +539,19 @@ EchoesUi.prototype.show_window = function(name) {
         self.scroll_down();
         self.ui.input.focus();
     });
+}
+
+EchoesUi.prototype.refresh_nicklist = function(window_name) {
+    var self = this;
+
+    if (this.active_window().attr('windowname') == window_name) {
+        this.log('refreshing nicklist for: ' + window_name, 0);
+        this.clear_nicknames();
+
+        this.get_window(window_name).find('ul:first > li').each(function() {
+            self.add_nickname($(this).attr('nickname'));
+        });
+    }
 }
 
 /**
@@ -541,7 +566,7 @@ EchoesUi.prototype.click_window = function(name) {
     if (win_object.length == 0) {
         win_object = this.ui.lists.channels.find('li[windowname="' + name + '"]');
     }
-    
+
     if (win_object.length > 0) {
         win_object.click();
     } else {
