@@ -289,7 +289,6 @@ EchoesClient.prototype.decrypt_encrypted_echo = function(nick, echo) { // echo i
     var c = new EchoesCrypto();
 
     this.ui.progress(50);
-    this.ui.add_window(nick, 'nickname');
     c.decrypt(echo, this.crypto.keychain[kc].private_key, this.get_nickchain_property(nick, 'symkey')).then(function() {
         self.ui.progress(101);
         self.ui.echo({

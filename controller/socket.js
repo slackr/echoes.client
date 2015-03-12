@@ -177,6 +177,7 @@ EchoesSocket.prototype.attach_socket_events = function() {
     this.sio.on('*echo', function(echo) {
         switch (echo.type) {
             case 'encrypted':
+                self.client.ui.add_window(echo.from, 'nickname');
                 self.log('eecho incoming: ' + echo.from + ': ' + JSON.stringify(echo), 0);
                 self.client.decrypt_encrypted_echo(echo.from, echo.echo);
             break;
@@ -216,7 +217,8 @@ EchoesSocket.prototype.attach_socket_events = function() {
             self.log('keyx method not supported, sending back notification', 3);
             return;
         }
-        
+
+        self.client.ui.add_window(data.from, 'nickname');
         self.client.keyx_import(data);
     });
     this.sio.on('*keyx_unsupported', function(data){
