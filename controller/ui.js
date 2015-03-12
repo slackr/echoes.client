@@ -53,6 +53,7 @@ function EchoesUi() {
             yes: $('#popup_yes'),
             no: $('#popup_no'),
         },
+        progress_bar: $('#progress_bar'),
         show_window_callback: null, // function to call after show_window()
     }
 
@@ -674,4 +675,23 @@ EchoesUi.prototype.popup_center = function() {
     // center div
     this.ui.popup.wrapper.css('margin-top', -this.ui.popup.wrapper.outerHeight()/2 + 'px');
     this.ui.popup.wrapper.css('margin-left', -this.ui.popup.wrapper.outerWidth()/2 + 'px');
+}
+
+/**
+ * Display progress with the appropriate percent
+ *
+ * percent value of -1 or 101 will hide the progress bar
+ *
+ * @param   {int}   percent The progress percent
+ *
+ * @returns {null}
+ */
+EchoesUi.prototype.progress = function(percent) {
+    if (percent < 0
+        || percent > 100) {
+        this.ui.progress_bar.hide();
+    } else {
+        this.ui.progress_bar.show();
+    }
+    this.ui.progress_bar.attr('value', percent);
 }
