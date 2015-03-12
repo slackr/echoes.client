@@ -33,7 +33,7 @@ function EchoesUi() {
         wall: $("#wall"),
         echoes: $("#echoes"),
         input: $('#echo_input'),
-        current_window_name: $('#current_window_name'),
+        window_title: $('#window_title'),
         buttons: {
             nicknames: $('#menu_nicknames'),
             channels: $('#menu_channels'),
@@ -497,7 +497,7 @@ EchoesUi.prototype.get_window_state = function(on_window) {
  * Shows a window on the wall and hides all others
  * Also sets the CSS ui selected window property in the nickname/channel list
  * Also calls EchoesUi#scroll_down and focuses the input echo_input
- * Also changes the current_window_name position based on type of window
+ * Also changes the window_title position based on type of window
  *
  * @see EchoesUi#scroll_down
  *
@@ -514,10 +514,11 @@ EchoesUi.prototype.show_window = function(name) {
     this.ui.lists.nicknames.find('li[windowname="' + name + '"]').addClass('ui_selected_window');
 
     this.ui.wall.find('div:visible:first').hide();
-    this.ui.current_window_name.fadeOut('fast');
+    this.ui.window_title.hide();
 
     this.ui.wall.find('div[windowname="' + name + '"]').fadeIn('fast', function() {
-        self.ui.current_window_name.text(name);
+        self.ui.window_title.text(name);
+        self.ui.window_title.show();
 
         switch($(this).attr('windowtype')) {
             case 'nickname':
@@ -530,11 +531,10 @@ EchoesUi.prototype.show_window = function(name) {
                 self.refresh_nicklist(name);
             break;
             default:
+                self.toggle_encrypt_icon(false);
                 self.clear_nicknames();
             break;
         }
-
-        self.ui.current_window_name.fadeIn('fast');
 
         self.scroll_down();
         self.ui.input.focus();

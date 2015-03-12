@@ -21,9 +21,8 @@ body {
 #menubar > li { /* menu buttons */
 }
 
-#current_window_name {
+#window_title {
     color: rgb(245, 245, 245);
-    opacity: 1;
 }
 
 #wall {

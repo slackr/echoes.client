@@ -264,7 +264,7 @@ body {
     cursor: pointer;
     font-size: 20px;
 }
-#current_window_name {
+#window_title {
     display: none;
     padding: 0px 10px 0px 10px;
     margin-left: 30px;
