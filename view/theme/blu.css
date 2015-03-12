@@ -21,9 +21,8 @@ body {
 #menubar > li { /* menu buttons */
 }
 
-#current_window_name {
+#window_title {
     color: rgb(245, 245, 245);
-    opacity: 1;
 }
 
 #wall {
@@ -46,21 +45,10 @@ body {
     color: rgb(66, 133, 244);
 }
 
-#me, #popup_wrapper {
+#popup_wrapper {
     background-color: rgb(66, 133, 244);
     color: rgb(255, 255, 255);
-}
-
-#me_wrapper, #popup_wrapper {
-    color: rgb(232, 232, 232);
     font-size: 40px;
-
-    border-bottom-color: rgb(255, 255, 255);
-}
-
-#me_input {
-    background: transparent;
-    color: rgb(255, 255, 255);
 }
 
 #close_lists, #popup {
@@ -68,35 +56,79 @@ body {
     color: rgb(255, 255, 255);
 }
 
-#nicknames, #channels {
+#nicknames, #windows {
     background-color: rgb(255, 255, 255);
     color: rgb(66, 133, 244);
     box-shadow: 0px 0px 3px 0px rgb(0, 0, 0);
 }
 
-#nicknames > li, #channels > li { /* windows */
+#nicknames > li, #windows > li { /* windows */
     font-weight: bold;
 }
 
-#nicknames > li:hover, #channels > li:hover, .ui_selected_window {
+#nicknames > li:hover, #windows > li:hover, .ui_selected_window {
     background: rgb(244, 244, 244);
     color: rgb(66, 133, 244);
 }
 
-.ui_echo {
-    background-color: rgb(255, 255, 255);
-    color: rgb(54, 54, 54);
-    font-weight: bold;
-    box-shadow: 0px 0px 1px 0px rgb(200, 200, 200);
-}
-.ui_error {
-   color: rgb(176, 0, 4);
-   font-weight: bold;
-}
 .ui_window_me {
     opacity: 0.5;
 }
 
-::-webkit-input-placeholder {
-   opacity: 1 !important;
+.registration_message {
+    color: rgba(242, 196, 196, 1);
+}
+
+.register_field_input {
+    background: transparent;
+    color: rgb(255, 255, 255);
+    border-bottom-color: rgba(255, 255, 255, 0.3);
+}
+
+.register_field_input::-webkit-input-placeholder {
+   color: white;
+   opacity: 0.8;
+}
+
+.ui_echo_bubble {
+    background-color: rgb(255, 255, 255);
+    color: rgb(54, 54, 54);
+    box-shadow: 0px 1px 2px 0px rgb(200, 200, 200);
+}
+.ui_error_bubble {
+    color: rgb(176, 0, 4);
+    font-weight: bold;
+}
+.ui_status_bubble {
+    color: rgb(54, 54, 54);
+}
+
+.ui_echo_avatar {
+}
+
+.ui_echo_info {
+    color: rgba(54, 54, 54, 0.3);
+    font-weight: normal;
+}
+
+#popup_yes:hover
+,#popup_no:hover
+,#send:hover
+,#encrypt:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+#progress_bar {
+    -moz-appearance: progressbar;
+    background-color: rgb(255, 255, 255);
+}
+#progress_bar[value]::-webkit-progress-bar {
+    background-color: rgb(255, 255, 255);
+}
+
+#progress_bar[value]::-moz-progress-bar {
+    background-color:  rgb(66, 133, 244);
+}
+#progress_bar[value]::-webkit-progress-value {
+    background-color:  rgb(66, 133, 244);
 }

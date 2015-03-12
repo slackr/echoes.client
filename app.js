@@ -12,153 +12,117 @@
  */
 
 /**
- * @type string The nickname assigned to active connection
- */
-var $me = null;
-
-/**
- * @type EchoesCrypto Global crypto object
- */
-var $crypto = null;
-
-/**
  * @type EchoesClient Global client object
  */
 var $client = null;
 
-/**
- * @type EchoesUi Global UI object
- */
-var $ui = null;
-
-/**
- * @type string Session ID to pass to server for verification
- */
-var $session_id = null;
-
 $(document).ready(function() {
-    $crypto = new EchoesCrypto();
-    $ui = new EchoesUi();
     $client = new EchoesClient();
-    $socket = new EchoesSocket();
-    $storage = new EchoesStorage();
-    $id = new EchoesIdentity();
-
-    $storage.get_store();
 
     /**
-     * Set controller cross references
-     *
-     * Socket reference for client object is set after initialization
+     * Set controller references
      */
-    $client.crypto = $crypto;
-    $client.ui = $ui;
-    $socket.client = $client;
-    $socket.ui = $ui;
-    $socket.crypto = $crypto;
-    $id.ui = $ui;
-    $id.crypto = $crypto;
-    $id.storage = $storage;
-
-    $crypto.does_browser_support('crypto');
-    $crypto.does_browser_support('ec');
+    $client.crypto = new EchoesCrypto();
+    $client.ui = new EchoesUi();
+    $client.id = new EchoesIdentity();
+    $client.id.storage = new EchoesStorage();
+    $client.socket = new EchoesSocket();
 
     /**
-     * generate new key(s) if supported
+     * Client controller cross reference
      */
-    if ($crypto.browser_support.crypto.supported) {
+    $client.socket.client = $client;
+    $client.id.client = $client;
+
+    $client.id.storage.get_store();
+    $client.crypto.does_browser_support('crypto');
+    $client.crypto.does_browser_support('ec');
+
+    $.ajaxSetup({ // csp on openwebapp
+        xhr: function() {
+            return new window.XMLHttpRequest({
+               mozSystem: true
+            });
+        }
+    });
+
+    /**
+     * authenticate and generate new key(s) if crypto is supported
+     */
+    if ($client.crypto.browser_support.crypto.supported) {
+        $client.ui.progress(10);
+        $client.id.load_identity().then(function() {
+            $client.ui.progress(30);
+            $client.connect();
+        }).catch(function(e) {
+            $client.id.device = $client.crypto.bytes_to_hex($client.crypto.new_iv(32));
+
+            $client.ui.popup('Identity', e, 'NEW', 'RECOVER',
+                function() {
+                    $client.register_show();
+                },
+                function() {
+                    $client.recovery_show();
+                });
+        });
+
         $client.keyx_new_key(null, 'asym');
-
-        if ($crypto.browser_support.ec.supported) {
+        if ($client.crypto.browser_support.ec.supported) {
             $client.keyx_new_key(null, 'keyx');
         }
 
-        $id.load_identity(
-            function(identity_data) {
-                $me = identity_data.identity;
-                $ui.ui.me_input.val($me);
-
-                $id.auth_request(function(sid) {
-                    $session_id = sid;
-                    $ui.show_me('Ready to connect!');
-                });
-            },
-            function() {
-                $me = null;
-                $id.ui.show_me('What do they call you?');
-                $id.ui.ui.me_input.val('');
-                $id.ui.ui.me_input.focus();
-            }
-        );
     } else {
-        $ui.popup('Warning!', 'Unsupported client :( Try Chrome or Firefox!', 'OK');
+        $client.ui.popup('Error', 'Unsupported client :( Try the latest Chrome or Firefox!', 'OK, I WILL', null, function() {
+            return false;
+        });
     }
 
     $(window).keydown(function(event) {
         // change input focus depending on what window is visible
         if (! (event.ctrlKey
                || event.metaKey
-               || event.altKey)) {
-            if ($ui.ui.me.is(':visible')) {
-                $ui.ui.me_input.focus();
-            } else {
-                $ui.ui.input.focus();
-            }
+               || event.altKey
+               || $client.ui.ui.popup.window.is(':visible'))) {
+            $client.ui.ui.input.focus();
         }
 
-        // on return keydown, if #me is visible, assume a new connection needs to be made
+        // on return keydown
         if (event.which == 13) {
-            if ($ui.ui.popup.window.is(':visible')) {
-                if ($ui.ui.popup.yes.is(':visible')) {
-                    $ui.ui.popup.yes.click();
+            if ($client.ui.ui.popup.window.is(':visible')) {
+                if ($client.ui.ui.popup.yes.is(':visible')) {
+                    $client.ui.ui.popup.yes.click();
                     return;
-                } else if ($ui.ui.popup.no.is(':visible')) {
-                    $ui.ui.popup.no.click();
+                } else if ($client.ui.ui.popup.no.is(':visible')) {
+                    $client.ui.ui.popup.no.click();
                     return;
                 } else {
-                    $ui.popup_close();
+                    $client.ui.popup_close();
                     return;
                 }
-            } else if ($ui.ui.me.is(':visible')) {
-                $me = $ui.ui.me_input.val();
-                if (! $me) {
-                    return;
-                }
-
-                $ui.status('Connecting...');
-
-                $socket.me = $me;
-                $socket.session_id = $session_id;
-
-                $socket.initialize();
-                $client.socket = $socket.socket; // set new ref to socket in client object
-
-                $ui.hide_me();
-                return;
             }
 
-            if (! $socket.socket.connected) {
-                $ui.error('Not connected :(');
-                return;
-            }
-
-            $client.send_echo();
+            $client.ui.ui.buttons.send.click();
         }
     });
 
-    $ui.ui.buttons.encrypt.click(function() {
-        if (! $socket.socket.connected) {
-            $ui.error('Not connected :(');
+    $client.ui.ui.buttons.send.click(function() {
+        $client.send_echo();
+    });
+
+    $client.ui.ui.buttons.encrypt.click(function() {
+        if (! $client.is_connected()) {
+            $client.ui.error('Not connected :(');
             return;
         }
-        
-        var endpoint = $ui.active_window().attr('windowname');
-        var current_state = $ui.get_window_state(endpoint);
-        $ui.log('window current encryption state: ' + current_state, 0);
+
+        var endpoint = $client.ui.active_window().attr('windowname');
+        var current_state = $client.ui.get_window_state(endpoint);
+        $client.ui.log('window current encryption state: ' + current_state, 0);
         switch (current_state) {
             case 'encrypted':
-                $ui.popup('Encryption', 'Turn off encryption for ' + endpoint + '?', 'YES', 'NO', function() {
+                $client.ui.popup('Encryption', 'Turn off encryption for ' + endpoint + '?', 'YES', 'NO', function() {
                     $client.execute_command(['/keyx_off', endpoint]);
+                    $client.ui.popup_close();
                 });
             break;
             case 'unencrypted':
@@ -175,7 +139,7 @@ $(document).ready(function() {
      *
      * @returns {null}
      */
-    $ui.ui.show_window_callback = function(w) {
+    $client.ui.ui.show_window_callback = function(w) {
         $client.update_encrypt_state(w);
     }
 });

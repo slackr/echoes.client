@@ -17,18 +17,20 @@ function EchoesClient() {
     this.socket = null; // socket.io object ref
     this.ui = null; // ui object ref
     this.crypto = null; // crypto object ref
+    this.id = null; // crypto object ref
 
     /**
      * @type Object A hash of nicknames and their imported keys/symkeys and keysent status
      */
     this.nickchain = {};
-
 }
 EchoesClient.prototype = Object.create(EchoesObject.prototype);
 EchoesClient.prototype.constructor = EchoesClient;
 
 /**
  * Process and execute a client command
+ *
+ * First array element will be the command, the rest are the commands parameters
  *
  * Example: ['/keyx','nick'] - ['/who'] - ['/eecho','nick','echo']
  *
@@ -39,10 +41,24 @@ EchoesClient.prototype.constructor = EchoesClient;
  * @returns {null}
  */
 EchoesClient.prototype.execute_command = function(params) {
+    var self = this;
     var command = params[0];
     params.shift();
 
     switch (command) {
+        case '/clear_storage':
+        case '/storage_clear':
+            this.ui.popup('Storage', 'Are you sure you want to clear the app storage? Identity will be lost...', 'CANCEL', 'CLEAR STORAGE', null, function() {
+                self.id.storage.clear();
+                self.ui.popup('Storage', 'The storage was cleared.', 'NEW IDENTITY', 'RECOVER',
+                    function() {
+                        self.register_show();
+                    },
+                    function() {
+                        self.recovery_show();
+                    });
+            });
+        break;
         case '/config':
             switch(params[0]) {
                 case 'LOG_LEVEL':
@@ -61,23 +77,37 @@ EchoesClient.prototype.execute_command = function(params) {
             }
         break;
         case '/clear':
-            this.ui.ui.echoes.html('');
+            this.ui.active_window().html('');
         break;
         case '/pm':
         case '/msg':
         case '/private':
-        case '/win':
-        case '/window':
         case '/query':
             var nick = params[0];
-            this.socket.emit('/pm', nick);
+            this.ui.progress(10);
+            this.socket.sio.emit('/pm', nick);
+        break;
+        case '/w':
+        case '/win':
+        case '/window':
+            var win = params[0];
+            if (win) {
+                this.ui.click_window(win);
+            } else {
+                this.ui.status('Current window: ' + this.ui.active_window().attr('windowname'));
+            }
         break;
         case '/echo':
             var chan = params[0];
             var echo = params[1];
 
-            this.ui.echo($me + ' ))) ' + echo);
-            this.socket.emit('/echo', { echo: echo, to: chan });
+            this.ui.echo({
+                nick: this.id.identity,
+                type: 'out',
+                echo: echo,
+            })
+
+            this.socket.sio.emit('/echo', { echo: echo, to: chan });
         break;
         case '/eecho':
             var nick = params[0];
@@ -92,7 +122,7 @@ EchoesClient.prototype.execute_command = function(params) {
             this.keyx_off(params[0], true);
         break;
         default:
-            this.socket.emit(command, params);
+            this.socket.sio.emit(command, params);
             this.log('passed unhandled command to server: ' + command + ' ' + params.join(' '), 0);
         break
     }
@@ -109,6 +139,11 @@ EchoesClient.prototype.execute_command = function(params) {
  * @returns {null}
  */
 EchoesClient.prototype.send_echo = function() {
+    if (! this.is_connected()) {
+        this.ui.error('Not connected :(');
+        return;
+    }
+
     var echo = this.ui.ui.input.val();
     var split = echo.trim().split(' ');
     var to = this.ui.active_window().attr('windowname');
@@ -140,7 +175,7 @@ EchoesClient.prototype.send_echo = function() {
 EchoesClient.prototype.join_channels = function() {
     var self = this;
 
-    this.log('Auto-joining channels...', 1);
+    this.log('Auto-joining previously joined channels...', 0);
     this.ui.joined_channels().each(function() {
         self.execute_command(['/join', $(this).attr('windowname')]);
     });
@@ -185,7 +220,7 @@ EchoesClient.prototype.keyx_derive_key = function(nick, private_key, public_key)
 }
 
 /**
- * Decrypts encrypted symkey from nick using private key
+ * (async) Decrypts encrypted symkey from nick using private key
  *
  * @param   {string} nick                           Nickchain to use
  * @param   {Array} encrypted_symkey_segments       Array of encrypted segments to pass to decrypt_asym
@@ -253,11 +288,25 @@ EchoesClient.prototype.decrypt_encrypted_echo = function(nick, echo) { // echo i
     var self = this;
     var c = new EchoesCrypto();
 
-    this.ui.add_nickname(nick);
+    this.ui.progress(50);
+    this.ui.add_window(nick, 'nickname');
     c.decrypt(echo, this.crypto.keychain[kc].private_key, this.get_nickchain_property(nick, 'symkey')).then(function() {
-        self.ui.echo(nick + ' ))) [encrypted] ' + c.decrypted_text, nick, false);
+        self.ui.progress(101);
+        self.ui.echo({
+            type: 'in',
+            avatar: '',
+            encrypted: true,
+            echo: c.decrypted_text,
+            window: nick,
+            nick: nick,
+            broadcast: false
+        });
     }).catch(function(e) {
-        self.ui.error({ error: 'Decrypt operation failed on echo from ' + nick, debug: kc + ': ' + e.toString() });
+        self.ui.progress(101);
+        self.ui.error({
+            error: 'Could not decrypt echo from ' + nick,
+            debug: kc + ': ' + e.toString()
+        });
     });
 }
 
@@ -288,10 +337,13 @@ EchoesClient.prototype.send_encrypted_echo = function(nick, echo) {
     var self = this;
     var c = new EchoesCrypto();
 
+    this.ui.progress(30);
     c.encrypt(echo, this.get_nickchain_property(nick, 'public_key'), this.get_nickchain_property(nick, 'symkey')).then(function() {
+        self.ui.progress(80);
+
         var and_echoes = false;
 
-        self.socket.emit('/echo', { // bypass execute_command for encrypted echoes, we'll write it on the wall manually below
+        self.socket.sio.emit('/echo', { // bypass execute_command for encrypted echoes, we'll write it on the wall manually below
             type: 'encrypted',
             to: nick,
             echo: c.encrypted_segments, // an array of base64 encoded segments
@@ -300,9 +352,22 @@ EchoesClient.prototype.send_encrypted_echo = function(nick, echo) {
         if (self.ui.get_window(nick).length == 0) {
             and_echoes = true;
         }
-        self.ui.echo($me + ' ))) [encrypted] ' + echo, nick, and_echoes);
+
+        self.ui.echo({
+            type: 'out',
+            encrypted: true,
+            avatar: '',
+            echo: echo,
+            window: nick,
+            nick: nick,
+            broadcast: and_echoes,
+        });
     }).catch(function(e) {
-        self.ui.error({ error: 'Encrypt operation failed on echo to ' + nick, debug: e.toString() });
+        self.ui.progress(101);
+        self.ui.error({
+            error: 'Encrypt operation failed on echo to ' + nick,
+            debug: e.toString()
+        });
     });
 }
 
@@ -325,7 +390,7 @@ EchoesClient.prototype.keyx_off = function(endpoint, inform_endpoint) {
     this.update_encrypt_state(endpoint);
 
     if (inform_endpoint) {
-        this.socket.emit('!keyx_off', {
+        this.socket.sio.emit('!keyx_off', {
             to: endpoint
         });
     }
@@ -350,6 +415,8 @@ EchoesClient.prototype.keyx_import = function(data) {
         return;
     }
 
+    this.ui.progress(10);
+
     var self = this;
     var nick = data.from;
     var kc = data.keychain;
@@ -358,7 +425,9 @@ EchoesClient.prototype.keyx_import = function(data) {
     var c = new EchoesCrypto();
 
     c.import_key(kc, key, 'spki').then(function() {
+        self.ui.progress(30);
         return c.hash(key).then(function() {
+            self.ui.progress(50);
             var nick_pubkey = c.keychain[kc].imported.public_key;
 
             self.set_nickchain_property(nick, {
@@ -373,45 +442,57 @@ EchoesClient.prototype.keyx_import = function(data) {
             if (kc == 'keyx') {
                 if (self.crypto.keychain[kc].private_key) {
                     return self.keyx_derive_key(nick, self.crypto.keychain[kc].private_key, nick_pubkey).then(function(){
+                        self.ui.progress(101);
                         self.log('key derivation successful after import', 0);
                     }).catch(function(e){
+                        self.ui.progress(101);
                         self.log('key derivation failed after import: ' + e.toString(), 3);
                     });
                 } else {
+                    self.ui.progress(101);
                     self.log('key derivation skipped, no private key in keychain: ' + kc, 0);
-                    return Promise.resolve('public key import successful, derivation skipped (no private key)');
+                    return Promise.resolve();
                 }
             }
 
             // if a symkey is sent with pubkey, attempt to decrypt it, otherwise generate a new symkey to be sent back
             if (encrypted_symkey_segments) {
                 return self.keyx_decrypt_symkey(nick, encrypted_symkey_segments, self.crypto.keychain[kc].private_key).then(function(){
+                    self.ui.progress(101);
                     self.log('symkey decryption successful after import', 0);
                 }).catch(function(e){
+                    self.ui.progress(101);
                     self.log('symkey decryption failed after import: ' + e.toString(), 3);
                 });
             } else {
                 self.log(kc + ' no symkey supplied by: ' + nick + ', generating a new one...', 0);
                 return c.generate_key('sym', true).then(function(){
+                    self.ui.progress(70);
                     self.set_nickchain_property(nick, { symkey: c.keychain['sym'].key });
                     return c.export_key('sym').then(function(){
+                        self.ui.progress(80);
                         return c.encrypt_asym(c.keychain['sym'].exported.key, nick_pubkey).then(function(){
+                            self.ui.progress(101);
                             self.set_nickchain_property(nick, { encrypted_symkey: c.encrypted_segments });
                             self.ui.status('Sucessfully generated symkey for ' + nick);
                         }).catch(function(e){
+                            self.ui.progress(101);
                             self.ui.error('Failed to encrypt symkey for ' + nick + ': ' + e.toString());
                             self.log('encrypt_asym for symkey to ' + nick + ' failed: ' + e.toString(), 3);
                         });
                     }).catch(function(e){
+                        self.ui.progress(101);
                         self.ui.error('Failed to export symkey for ' + nick + ': ' + e.toString());
                         self.log('export_key for symkey to ' + nick + ' failed: ' + e.toString(), 3);
                     });
                 }).catch(function(e){
+                    self.ui.progress(101);
                     self.ui.error('Failed to generate symkey for ' + nick + ': ' + e.toString());
                     self.log('generate_key for symkey to ' + nick + ' failed: ' + e.toString(), 3);
                 });
             }
         }).catch(function(e) {
+            self.ui.progress(101);
             self.wipe_nickchain(nick);
             self.update_encrypt_state(nick);
 
@@ -419,6 +500,7 @@ EchoesClient.prototype.keyx_import = function(data) {
             self.log('hash: ' + e.toString(), 3);
         })
     }).catch(function(e) {
+        self.ui.progress(101);
         self.wipe_nickchain(nick);
         self.update_encrypt_state(nick);
 
@@ -439,37 +521,48 @@ EchoesClient.prototype.keyx_import = function(data) {
  * @returns {null}
  */
 EchoesClient.prototype.keyx_new_key = function(endpoint, kc) {
+    this.ui.progress(10);
+
     kc = kc || 'asym';
 
     if (! this.crypto.browser_support.crypto.supported) {
+        this.ui.progress(101);
         this.ui.error('Your browser does not support encrypted echoes, try the latest Chrome/Firefox');
         this.log('browser not marked as supported for crypto: ' + navigator.userAgent, 0);
         return;
     }
 
+    this.ui.progress(20);
     this.ui.status('Generating new session keys (' + kc + ')...');
     this.log('generating new ' + kc + ' session keypair...', 0);
 
     var self = this;
     this.crypto.generate_key(kc).then(function() {
+        self.ui.progress(40);
         self.log(kc + ' keypair generated, exporting...', 0);
         return self.crypto.export_key(kc + '_public').then(function() {
+            self.ui.progress(80);
             self.log(kc + ' public key exported successfully', 0);
 
             return self.crypto.hash(self.crypto.keychain[kc].exported.public_key).then(function() {
+                self.ui.progress(101);
                 self.crypto.keychain[kc].exported.hash = self.crypto.resulting_hash.match(/.{1,8}/g).join(' ');
+                self.ui.status('Successfully generated new session key (' + kc + '): ' + self.crypto.keychain[kc].exported.hash);
                 if (typeof endpoint != 'undefined'
                     && endpoint != null) {
                     self.log('sending ' + kc + ' public key to endpoint: ' + endpoint, 0);
                     self.keyx_send_key(endpoint);
                 }
             }).catch(function(e) {
+                self.ui.progress(101);
                 self.ui.error('Failed to hash exported ' + kc + ' key: ' + e.toString());
             });
         }).catch(function(e) {
+            self.ui.progress(101);
             self.ui.error('Failed to export key: ' + e.toString());
         });
     }).catch(function(e) {
+        self.ui.progress(101);
         self.ui.error('Failed to generate keypair: ' + e.toString());
     });
 }
@@ -501,6 +594,7 @@ EchoesClient.prototype.keyx_send_key = function(endpoint) {
     var self = this;
     var kc = this.get_nickchain_property(endpoint, 'keychain') || (this.crypto.browser_support.ec.supported ? 'keyx' : 'asym');
 
+    this.ui.progress(10);
     if (this.crypto.keychain[kc].public_key == null) {
         this.keyx_new_key(endpoint, kc);
         return;
@@ -517,13 +611,12 @@ EchoesClient.prototype.keyx_send_key = function(endpoint) {
         symkey: this.get_nickchain_property(endpoint, 'encrypted_symkey'), // generated after import of pubkey in keyx_import()
     }
 
-    this.socket.emit('!keyx', broadcast);
+    this.ui.progress(50);
+    this.socket.sio.emit('!keyx', broadcast);
 }
 
 /**
  * Determines the encryption state for a window and sets the window state accordingly
- *
- * Changes the icon to the matching encryption state asset
  *
  * @see EchoesUi#set_window_state
  *
@@ -532,6 +625,11 @@ EchoesClient.prototype.keyx_send_key = function(endpoint) {
  * @returns {null}
  */
 EchoesClient.prototype.update_encrypt_state = function(for_window) {
+    if (this.ui.get_window(for_window).attr('windowtype') != 'nickname') {
+        this.log('window encrypt state update skipped for non-nickname window: ' + for_window, 0);
+        return;
+    }
+
     var sent_decrypt_key = (this.get_nickchain_property(for_window, 'keysent') == true ? true : false);
     var received_encrypt_key = (this.get_nickchain_property(for_window, 'public_key') != null ? true : false);
 
@@ -544,15 +642,7 @@ EchoesClient.prototype.update_encrypt_state = function(for_window) {
 
     this.ui.set_window_state(state, for_window);
 
-    if (for_window == this.ui.active_window().attr('windowname')) {
-        this.log('setting active window icon to ' + state, 0);
-        for (var icon in this.ui.assets.encrypt) {
-            this.ui.assets.encrypt[icon].hide();
-        }
-        this.ui.assets.encrypt[state].show();
-    }
-
-    this.log('window ' + for_window + ' set to ' + state + ' s:' + sent_decrypt_key + ' r:' + received_encrypt_key);
+    this.log('window ' + for_window + ' set to ' + state + ' sent?:' + sent_decrypt_key + ' recv?:' + received_encrypt_key, 0);
 }
 
 /**
@@ -640,4 +730,270 @@ EchoesClient.prototype.wipe_nickchain = function(nick) {
 EchoesClient.prototype.wipe_all_nickchains = function() {
     this.nickchain = {};
     this.log('wiped all nickchains', 0);
+}
+
+/**
+ * Display the registration window
+ *
+ * @returns {null}
+ */
+EchoesClient.prototype.register_show = function(initial_message) {
+    var self = this;
+    this.ui.ui.popup.message.html('');
+
+    var fields = {
+        'Nickname': {
+            input_id: 'register_input_nickname',
+            focus: true,
+            id_value: 'identity',
+        },
+        'Your@email.com': {
+            input_id: 'register_input_email',
+            id_value: 'email',
+        },
+        'Your@email.com again': {
+            input_id: 'register_input_email_confirm',
+        },
+        'Recovery Token (if available)': {
+            input_id: 'register_input_recovery_token'
+        },
+    }
+
+    this.ui.ui.popup.message.append(
+        $('<div>')
+            .addClass('registration_message')
+            .attr('id', 'registration_message')
+            .text(initial_message)
+    );
+    var registration_message = $('#registration_message');
+
+    for (var field in fields) {
+        this.ui.ui.popup.message.append(
+            $('<input>')
+                .addClass('register_field_input')
+                .attr('id', fields[field].input_id)
+                .attr('placeholder', field)
+        );
+        if (fields[field].focus) {
+            $('#' + fields[field].input_id).focus();
+        }
+        if (fields[field].id_value) {
+            $('#' + fields[field].input_id).val(this.id[fields[field].id_value]);
+        }
+    }
+
+    this.ui.popup('New Identity', '', 'REGISTER', 'RECOVER',
+        function() {
+            self.ui.progress(10);
+            self.register_submit().catch(function(e) {
+                self.ui.progress(101);
+                registration_message.text(e);
+            });
+        },
+        function() {
+            self.recovery_show();
+        }
+    );
+
+    //this.ui.ui.popup.message.find('input:first').focus();
+}
+
+/**
+ * (async) Submit the registration request
+ *
+ * @param   {EchoesClient} self Self object reference
+ *
+ * @returns {Promise} Either a .resolve(null) or .reject('error message')
+ */
+EchoesClient.prototype.register_submit = function() {
+    this.ui.progress(20);
+
+    var self = this;
+    var register_data = {
+        identity: self.ui.ui.popup.message.find('#register_input_nickname').val(),
+        email: self.ui.ui.popup.message.find('#register_input_email').val(),
+        email_confirm: self.ui.ui.popup.message.find('#register_input_email_confirm').val(),
+        recovery_token: self.ui.ui.popup.message.find('#register_input_recovery_token').val(),
+        device: self.id.device,
+    }
+
+    if (! register_data.identity) {
+        self.ui.ui.popup.message.find('#register_input_nickname').focus();
+        return Promise.reject('Please enter a valid nickname');
+    }
+    if (! register_data.email) {
+        self.ui.ui.popup.message.find('#register_input_email').focus();
+        return Promise.reject('Please enter a valid email address');
+    }
+    if (register_data.email !== register_data.email_confirm) {
+        self.ui.ui.popup.message.find('#register_input_email_confirm').focus();
+        return Promise.reject('The two email addresses do not match');
+    }
+
+    var registration_message = $('#registration_message');
+
+    self.ui.progress(30);
+    self.log('starting registration for ' + JSON.stringify(register_data), 0);
+    return self.id.generate_signing_keypair().then(function(){
+        self.ui.progress(50);
+
+        self.id.identity = register_data.identity;
+        self.id.device = register_data.device;
+        self.id.email = register_data.email;
+        self.id.recovery_token = register_data.recovery_token;
+        self.id.register().then(function(){
+            self.ui.progress(70);
+
+            self.log('registration successful for ' + JSON.stringify(register_data), 0);
+            registration_message.text('Successfully registered nickname: ' + self.id.identity);
+            self.ui.popup_center();
+            self.id.save_identity().then(function(){
+                self.ui.progress(101);
+                self.connect();
+            }).catch(function(e){
+                self.ui.progress(101);
+                registration_message.text(e);
+                self.ui.popup_center();
+            });
+        }).catch(function(e){
+            self.ui.progress(101);
+            registration_message.text(e);
+            self.ui.popup_center();
+            self.log(e, 3);
+        });
+    }).catch(function(e){
+        self.ui.progress(101);
+        self.log('failed to generate signing keypair for ' + JSON.stringify(register_data), 3);
+        registration_message.text(e);
+        self.ui.popup_center();
+    });
+}
+
+/**
+ * Display the identity recovery window
+ *
+ * @returns {null}
+ */
+EchoesClient.prototype.recovery_show = function() {
+    var self = this;
+    this.ui.ui.popup.message.html('');
+
+    var fields = {
+        'Nickname': {
+            input_id: 'register_input_nickname',
+            focus: true,
+        },
+        "Email@address.com used during registration": {
+            input_id: 'register_input_email'
+        },
+    }
+
+    this.ui.ui.popup.message.append(
+        $('<div>')
+            .addClass('registration_message')
+            .attr('id', 'registration_message')
+            .text('')
+    );
+
+    var registration_message = $('#registration_message');
+
+    for (var field in fields) {
+        this.ui.ui.popup.message.append(
+            $('<input>')
+                .addClass('register_field_input')
+                .attr('id', fields[field].input_id)
+                .attr('placeholder', field)
+        );
+        if (fields[field].focus) {
+            $('#' + fields[field].input_id).focus();
+        }
+    }
+    this.ui.popup('Recover Identity', '', 'GET TOKEN', 'CANCEL',
+        function() {
+            self.id.identity = self.ui.ui.popup.message.find('#register_input_nickname').val();
+            self.id.email = self.ui.ui.popup.message.find('#register_input_email').val();
+
+            if (! self.id.identity) {
+                self.ui.ui.popup.message.find('#register_input_nickname').focus();
+                registration_message.text('Please enter a valid nickname');
+                return;
+            }
+            if (! self.id.email) {
+                self.ui.ui.popup.message.find('#register_input_email').focus();
+                registration_message.text('Please enter a valid email address');
+                return;
+            }
+
+            self.ui.progress(10);
+            self.id.recovery_token_request().then(function(){
+                self.ui.progress(101);
+                self.register_show('A recovery token has been emailed to you. Please enter it below to recover an existing identity.');
+            }).catch(function(e){
+                self.ui.progress(101);
+                registration_message.text(e);
+                self.ui.popup_center();
+                self.log(e, 3);
+            });
+        },
+        function() {
+            self.register_show();
+        }
+    );
+
+    //this.ui.ui.popup.message.find('input:first').focus();
+}
+
+/**
+ * Initiate the authentication request
+ *
+ * If successful display popup with connect(), else register_show()
+ *
+ * @returns {null}
+ */
+EchoesClient.prototype.connect = function() {
+    this.ui.progress(50);
+    var self = this;
+    this.id.auth_request().then(function(){
+        self.ui.progress(80);
+        self.id.auth_reply().then(function(){
+            self.ui.progress(101);
+            self.ui.popup('Ready','Hello ' + self.id.identity + '!', 'CONNECT', null, function() {
+                self.ui.status('Connecting...');
+
+                self.socket.initialize();
+                self.ui.popup_close();
+            });
+        }).catch(function(e){
+            self.ui.progress(101);
+            self.ui.popup('Error','Failed to authenticate nickname: ' + self.id.identity + ' (' + e + ')', 'RETRY', 'NEW NICKNAME', function() {
+                self.connect();
+                self.ui.popup_close();
+            }, function() {
+                self.register_show();
+            });
+        })
+    }).catch(function(e){
+        self.ui.progress(101);
+        self.ui.popup('Error','Failed to authenticate nickname: ' + self.id.identity + ' (' + e + ')', 'RETRY', 'NEW NICKNAME', function() {
+            self.connect();
+            self.ui.popup_close();
+        }, function() {
+            self.register_show();
+        });
+    });
+}
+
+/**
+ * Determine if client is connected to server
+ *
+ * @returns {bool} Is the client connected?
+ */
+EchoesClient.prototype.is_connected = function() {
+    if (typeof this.socket == 'undefined'
+        || typeof this.socket.sio == 'undefined'
+        || ! this.socket.sio
+        || ! this.socket.sio.connected) {
+        return false;
+    }
+    return true;
 }

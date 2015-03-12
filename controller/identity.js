@@ -14,227 +14,325 @@
 function EchoesIdentity() {
     EchoesObject.call(this, 'id');
 
-    this.ui = null; // ui object ref
-    this.crypto = null; // crypto object ref
-    this.storage = null; // storage object ref
+    /**
+     * Cross reference to other objects must be set prioer to using methods
+     */
+    this.client = null;
+    this.storage = null;
 
-    this.id = null;
+    /**
+     * Identity object data to be manipulated by its methods
+     */
+    this.identity = null;
     this.device = null;
+    this.email = null;
     this.session_id = null;
     this.nonce = null;
+    this.nonce_signature = null;
+    this.recovery_token = null;
+    this.pubkey = null;
+    this.privkey = null;
+    this.imported = { privkey: null };
+    this.exported = { privkey: null };
 }
 EchoesIdentity.prototype = Object.create(EchoesObject.prototype);
 EchoesIdentity.prototype.constructor = EchoesIdentity;
 
 /**
- * (async) Generates a new signing keypair calls register()
+ * (async) Generates a new signing keypair and exports to
  *
- * @param   {object} id   Object containing identity data
+ * self.pubkey - PEM formatted key
+ * self.exported.privkey - PEM formatted private key
  *
- * @returns {null}
+ * @returns {Promise} Either a .resolve(null) or .reject('error message')
  */
-EchoesIdentity.prototype.new_identity = function(id) {
+EchoesIdentity.prototype.generate_signing_keypair = function() {
     var self = this;
 
-    this.crypto.generate_key('sign', true).then(function() {
-        self.crypto.export_key('sign_public').then(function() {
-            self.crypto.export_key('sign_private').then(function() {
-                id.pubkey = self.crypto.keychain.sign.exported.public_key;
-                self.register(id);
+    return this.client.crypto.generate_key('sign', true).then(function() {
+        return self.client.crypto.export_key('sign_public').then(function() {
+            return self.client.crypto.export_key('sign_private').then(function() {
+                self.log('signing keypair generated and exported', 0);
+                self.pubkey = self.client.crypto.keychain.sign.exported.public_key;
+                self.exported.privkey = self.client.crypto.keychain.sign.exported.private_key;
+                self.imported.privkey = self.client.crypto.keychain.sign.private_key;
+            }).catch(function(e) {
+                self.log('failed to export signing privkey for new identity', 3);
             });
+        }).catch(function(e) {
+            self.log('failed to export signing pubkey for new identity', 3);
         });
+    }).catch(function(e) {
+        self.log('failed to generate signing keypair for new identity', 3);
     });
 }
 
 /**
  * (async) Send a registration request
  *
- * @param   {object} id   Object containing identity data
+ * The data posted will be object properties: identity, pubkey, device, email
+ * These must be set before calling register()
  *
- * @returns {null}
+ * @returns {Promise} Either a .resolve(null) or .reject('error message')
  */
-EchoesIdentity.prototype.register = function(id) {
+EchoesIdentity.prototype.register = function() {
     var self = this;
 
     var data = {
-        identity: id.identity,
-        pubkey: id.pubkey,
-        device: id.device,
-        email: id.email,
+        identity: this.identity,
+        pubkey: this.pubkey,
+        device: this.device,
+        recovery_token: this.recovery_token,
+        email: this.email,
     }
 
-    $.ajax({
-        type: "POST",
-        url: AppConfig.PARALLAX_AUTH + '/register/',
-        data: data,
-        dataType: 'json',
-    })
-    .done(function (data) {
-        switch (data.status) {
-            case 'success':
-                self.save_identity(id);
-            break;
-            default:
-                self.log('reg request error: ' + JSON.stringify(data), 3);
-            break;
-        }
-    })
-    .fail(function (err) {
-        self.log('reg request http fail: ' + JSON.stringify(err), 3);
-    })
-    .always(function() {});
-}
-
-/**
- * (async) Load identity from storage and import the private key
- *
- * @param   {function}  callback    (optional) Function to callback when loading is complete
- *
- * @returns {null}
- */
-EchoesIdentity.prototype.load_identity = function(callback, callback_noid) {
-    var self = this;
-
-    this.storage.get('identity', function(data) {
-        if (typeof data.identity == 'undefined'
-            || data.identity == null) {
-            self.log("no identity found in storage", 2);
-            if (typeof callback_noid == 'function') {
-                callback_noid();
+    self.log('sending registration request with: ' + JSON.stringify(data), 0);
+    return new Promise(function(resolve, reject) {
+        $.ajax({
+            type: "POST",
+            url: AppConfig.PARALLAX_AUTH + '/register/',
+            data: data,
+            dataType: 'json',
+        })
+        .done(function (data) {
+            switch (data.status) {
+                case 'success':
+                    self.log('registration reply incoming: ' + JSON.stringify(data), 0);
+                    self.log('successfully registered identity: ' + self.identity, 1);
+                    resolve();
+                break;
+                default:
+                    self.log('registration error: ' + JSON.stringify(data), 3);
+                    reject(data.message + ': ' + data.log);
+                break;
             }
-            return;
-        }
-
-        var identity_data = JSON.parse(data.identity);
-        self.crypto.import_key('sign', identity_data.privkey, 'pkcs8', true)
-            .then(function() {
-                self.id = identity_data.identity;
-                self.device = identity_data.device;
-                self.log("identity '" + self.id + "' loaded from storage", 1);
-                if (typeof callback == 'function') {
-                    callback(identity_data);
-                }
-            })
-            .catch(function(e) {
-                console.log(e);
-                self.id = null;
-                self.device = null;
-                self.log("failed to load identity '" + identity_data.identity + "' from storage: " + e, 3);
-            });
+        })
+        .fail(function (err) {
+            self.log('reg request http fail: ' + JSON.stringify(err), 3);
+            reject('Registration request transport failure');
+        });
     });
 }
 
 /**
- * (async) Save identity to storage after successful registration
+ * (async) Load identity from storage and import the PEM private key
  *
- * @param   {object} id   Object containing identity data
- *
- * @returns {null}
+ * @returns {Promise} Either a .resolve(null) or .reject('error message')
  */
-EchoesIdentity.prototype.save_identity = function(id) {
+EchoesIdentity.prototype.load_identity = function() {
     var self = this;
 
-    id.privkey = this.crypto.keychain.sign.exported.private_key; // this should be wrapped with aes
-    this.storage.set('identity', JSON.stringify(id), function() {
-        self.log("identity '" + id.identity + "' saved to storage", 1);
-        self.load_identity();
+    return new Promise(function(resolve, reject) {
+        self.storage.get('identity', function(data) {
+            if (typeof data.identity == 'undefined'
+                || data.identity == null) {
+                self.log("no identity found in storage", 3);
+                reject('No identity found in storage');
+            } else {
+                var identity_data = JSON.parse(data.identity);
+                self.client.crypto.import_key('sign', identity_data.privkey, 'pkcs8', true)
+                    .then(function() {
+                        self.identity = identity_data.identity;
+                        self.device = identity_data.device;
+                        self.pubkey = identity_data.pubkey;
+                        self.privkey = identity_data.privkey;
+                        self.email = identity_data.email;
+                        self.imported.privkey = self.client.crypto.keychain.sign.imported.private_key;
+                        self.log("identity '" + self.identity + "' loaded from storage", 1);
+                        resolve();
+                    })
+                    .catch(function(e) {
+                        self.identity = null;
+                        self.log("failed to load identity '" + identity_data.identity + "' from storage: " + e, 3);
+                        reject(e);
+                    });
+            }
+        });
     });
 }
 
 /**
- * (async) Initiate an authentication request for currently
- * loaded identity and device
+ * (async) Save identity object to storage
+ *
+ * Uses this.exported.privkey, if no privkey was loaded from storage
+ *
+ * Data format: {'identity': JSON.stringify(identity_data) }
+ *
+ * @returns {Promise} Either a .resolve(null) or .reject('error message')
+ */
+EchoesIdentity.prototype.save_identity = function() {
+    var self = this;
+
+    this.privkey = this.exported.privkey || this.privkey; // this should be wrapped with aes
+
+    var identity_data = {
+        identity: this.identity,
+        pubkey: this.pubkey,
+        privkey: this.privkey,
+        device: this.device,
+        email: this.email,
+    }
+
+    return new Promise(function(resolve, reject) {
+        self.storage.set('identity', JSON.stringify(identity_data), function() {
+            self.log("identity '" + self.identity + "' saved to storage", 1);
+            resolve();
+        });
+    });
+}
+
+/**
+ * (async) Initiate an authentication request
+ *
+ * Identity must be loaded first, this.device and this.identity must be set
+ *
+ * If request is successful, the nonce is signed and stored in:
+ *
+ * self.nonce
+ * self.nonce_signature
+ *
+ * to be later sent with this.auth_reply
  *
  * @see EchoesIdentity#load_identity
+ * @see EchoesIdentity#nonce
+ * @see EchoesIdentity#nonce_signature
+ * @see EchoesIdentity#auth_reply
  *
- * @param   {function}  callback    (optional) Passed to auth_reply
- *
- * @returns {null}
+ * @returns {Promise} Either a .resolve(null) or .reject('error message')
  */
-EchoesIdentity.prototype.auth_request = function(callback) {
+EchoesIdentity.prototype.auth_request = function() {
     var self = this;
 
     var data = {
-        identity: this.id,
+        identity: this.identity,
         device: this.device,
     }
 
-    $.ajax({
-        type: "POST",
-        url: AppConfig.PARALLAX_AUTH + '/auth-request/',
-        data: data,
-        dataType: 'json',
-    })
-    .done(function (data) {
-        switch (data.status) {
-            case 'success':
-                var nonce = data.nonce;
+    return new Promise(function(resolve, reject) {
+        $.ajax({
+            type: "POST",
+            url: AppConfig.PARALLAX_AUTH + '/auth-request/',
+            data: data,
+            dataType: 'json',
+        })
+        .done(function (data) {
+            switch (data.status) {
+                case 'success':
+                    self.nonce = data.nonce;
 
-                self.log('auth request incoming: ' + JSON.stringify(data), 0);
-                self.crypto.sign(nonce, self.crypto.keychain.sign.imported.private_key)
-                    .then(function() {
-                        var nonce_signature = btoa(self.crypto.resulting_signature);
-                        self.auth_reply(nonce, nonce_signature, callback);
-                    })
-                    .catch(function(e) {
-                        self.log('failed to sign nonce from auth-reply: ' + data.nonce + ', e: ' + e);
-                    });
-            break;
-            default:
-                self.log('auth request error: ' + JSON.stringify(data), 3);
-            break;
-        }
-    })
-    .fail(function (err) {
-        self.log('auth request http fail: ' + JSON.stringify(err), 3);
-    })
-    .always(function() {});
+                    self.log('auth request incoming: ' + JSON.stringify(data), 0);
+                    return self.client.crypto.sign(self.nonce, self.imported.privkey)
+                        .then(function() {
+                            var nonce_signature = btoa(self.client.crypto.resulting_signature);
+                            self.nonce_signature = nonce_signature;
+                            self.log('signature for: ' + self.nonce + ' stored in self.id.nonce_signature', 1);
+                            resolve();
+                        })
+                        .catch(function(e) {
+                            self.log('failed to sign nonce from auth-reply: ' + data.nonce + ', e: ' + e, 3);
+                            reject(e);
+                        });
+                break;
+            }
+            self.log('auth request error: ' + data.message, 3);
+            reject(data.message + ': ' + (data.log || data.db_log));
+            return false;
+        })
+        .fail(function (err) {
+            self.log('auth request http fail: ' + JSON.stringify(err), 3);
+            reject('Auth request transport failure');
+        });
+    });
 }
 
 /**
  * (async) Reply to auth request with signed nonce
  *
- * First parameter of callback will be the session_id returned from parallax
+ * If successful, the server provided session_id will stored in self.session_id
  *
  * @see EchoesIdentity#auth_request
+ * @see EchoesIdentity#nonce
+ * @see EchoesIdentity#nonce_signature
  *
- * @param   {function}  callback    (optional) Function to callback when auth-reply succeeds
- *
- * @returns {null}
+ * @returns {Promise} Either a .resolve(null) or .reject('error message')
  */
-EchoesIdentity.prototype.auth_reply = function(nonce, nonce_signature, callback) {
+EchoesIdentity.prototype.auth_reply = function() {
     var self = this;
 
     var data = {
-        nonce_identity: this.id,
-        nonce: nonce,
-        nonce_signature: nonce_signature,
+        nonce_identity: this.identity,
+        nonce: this.nonce,
+        nonce_signature: this.nonce_signature,
         device: this.device,
     }
 
-    $.ajax({
-        type: "POST",
-        url: AppConfig.PARALLAX_AUTH + '/auth-reply/',
-        data: data,
-        dataType: 'json',
-    })
-    .done(function (data) {
-        switch (data.status) {
-            case 'success':
-                self.log('auth success: ' + JSON.stringify(data), 0);
-                self.session_id = data.session_id;
+    return new Promise(function(resolve, reject) {
+        $.ajax({
+            type: "POST",
+            url: AppConfig.PARALLAX_AUTH + '/auth-reply/',
+            data: data,
+            dataType: 'json',
+        })
+        .done(function (data) {
+            switch (data.status) {
+                case 'success':
+                    self.session_id = data.session_id;
+                    self.log('auth successful for ' + self.identity + ', session id stored in self.session_id', 0);
+                    resolve();
+                    return true;
+                break;
+            }
 
-                if (typeof callback == 'function') {
-                    callback(self.session_id);
-                }
-            break;
-            default:
-                self.log('auth reply error: ' + JSON.stringify(data), 3);
-            break;
-        }
-    })
-    .fail(function (err) {
-        self.log('auth reply http fail: ' + JSON.stringify(err), 3);
-    })
-    .always(function() {});
+            self.log('auth reply error: ' + JSON.stringify(data), 3);
+            reject(data.message + ': ' + data.log);
+            return false;
+        })
+        .fail(function (err) {
+            self.log('auth reply http fail: ' + JSON.stringify(err), 3);
+            reject('Auth reply transport failure');
+        });
+    });
+}
+
+/**
+ * (async) Request a new recovery token
+ *
+ * Identity must be loaded first, this.device and this.identity must be set
+ *
+ * @returns {Promise} Either a .resolve(null) or .reject('error message')
+ */
+EchoesIdentity.prototype.recovery_token_request = function() {
+    var self = this;
+
+    var data = {
+        identity: this.identity,
+        device: this.device,
+        email: this.email,
+    }
+
+    return new Promise(function(resolve, reject) {
+        $.ajax({
+            type: "POST",
+            url: AppConfig.PARALLAX_AUTH + '/recovery-token/',
+            data: data,
+            dataType: 'json',
+        })
+        .done(function (data) {
+            switch (data.status) {
+                case 'success':
+                    self.log('recovery token reply: ' + JSON.stringify(data), 0);
+                    self.log('recovery token requested for ' + self.identity + '@' + self.device, 1);
+                    resolve();
+                    return true;
+                break;
+            }
+            self.log('recovery token request error: ' + data.message, 3);
+            reject(data.message + ': ' + (data.log || data.db_log));
+            return false;
+        })
+        .fail(function (err) {
+            self.log('recovery token request http fail: ' + JSON.stringify(err), 3);
+            reject('Recovery token request transport failure');
+        });
+    });
 }

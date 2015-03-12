@@ -33,7 +33,7 @@
 </head>
 <body>
     <ul id="menubar">
-        <li id="menu_channels">
+        <li id="menu_windows">
             <svg width="24" height="24" viewBox="0 0 24 24">
                 <path d="M3 18h18v-2h-18v2zm0-5h18v-2h-18v2zm0-7v2h18v-2h-18z"></path>
             </svg>
@@ -44,34 +44,18 @@
             </svg>
         </li>
 
-        <li id="current_window_name"></li>
+        <li id="window_title"></li>
     </ul>
     <div id="wall">
-        <ul id="echoes" windowname=")))"></ul>
+        <div id="echoes" windowname=")))"></div>
     </div>
     <div id="input">
         <div id="input_wrapper">
             <input id="echo_input" autocomplete="off" maxlength="140" placeholder=")))" />
         </div>
     </div>
-    <div id="encrypt">
-        <svg id="icon_encrypted" width="24" height="24" viewBox="0 0 24 24">
-            <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"></path>
-        </svg>
-        <svg id="icon_oneway" width="24" height="24" viewBox="0 0 24 24">
-            <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"></path>
-        </svg>
-        <svg id="icon_unencrypted" width="24" height="24" viewBox="0 0 24 24">
-            <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"></path>
-        </svg>
-    </div>
-
-    <div id="me">
-        <div id="me_wrapper">
-            <div id="me_message"></div>
-            <input id="me_input" autocomplete="off" maxlength="20" placeholder="" />
-        </div>
-    </div>
+    <div id="encrypt"></div>
+    <div id="send" class="ui_echo_send_icon"></div>
 
     <div id="popup">
         <div id="popup_wrapper">
@@ -83,9 +67,10 @@
             </div>
         </div>
     </div>
+    <progress id="progress_bar" max="100" value="0"></progress>
     <div id="close_lists"></div>
     <ul id="nicknames"></ul>
-    <ul id="channels">
+    <ul id="windows">
         <li windowname=")))">)))</li>
     </ul>
 </body>
