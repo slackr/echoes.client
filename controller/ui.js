@@ -36,14 +36,14 @@ function EchoesUi() {
         window_title: $('#window_title'),
         buttons: {
             nicknames: $('#menu_nicknames'),
-            channels: $('#menu_channels'),
+            windows: $('#menu_windows'),
             encrypt: $('#encrypt'),
             send: $('#send'),
         },
         lists: {
             close_lists: $('#close_lists'),
             nicknames: $('#nicknames'),
-            channels: $('#channels'),
+            windows: $('#windows'),
         },
         popup: {
             window: $('#popup'),
@@ -74,27 +74,28 @@ EchoesUi.prototype.attach_events = function() {
     this.ui.lists.close_lists.click(function() {
         self.ui.lists.close_lists.hide();
         self.ui.lists.nicknames.hide("slide", { direction: "right" }, 100);
-        self.ui.lists.channels.hide("slide", { direction: "left" }, 100);
+        self.ui.lists.windows.hide("slide", { direction: "left" }, 100);
 
         self.ui.input.focus();
     });
 
     this.ui.buttons.nicknames.click(function() {
         self.ui.lists.nicknames.toggle("slide", { direction: "right" }, 100, function() {
-            self.ui.lists.close_lists.toggle(self.ui.lists.channels.is(':visible') || self.ui.lists.nicknames.is(':visible'));
+            self.ui.lists.close_lists.toggle(self.ui.lists.windows.is(':visible') || self.ui.lists.nicknames.is(':visible'));
         });
 
         self.ui.input.focus();
     });
-    this.ui.buttons.channels.click(function() {
-        self.ui.lists.channels.toggle("slide", { direction: "left" }, 100, function() {
-            self.ui.lists.close_lists.toggle(self.ui.lists.channels.is(':visible') || self.ui.lists.nicknames.is(':visible'));
+    this.ui.buttons.windows.click(function() {
+        self.ui.lists.windows.toggle("slide", { direction: "left" }, 100, function() {
+            self.ui.lists.close_lists.toggle(self.ui.lists.windows.is(':visible') || self.ui.lists.nicknames.is(':visible'));
         });
 
         self.ui.input.focus();
     });
 
-    this.ui.lists.channels.on('click', 'li', function() {
+    this.ui.lists.windows.on('click', 'li', function() {
+        var win =
         self.show_window($(this).attr('windowname'));
         self.ui.lists.close_lists.click();
     });
@@ -103,10 +104,6 @@ EchoesUi.prototype.attach_events = function() {
         self.add_window(nick, 'nickname');
         self.show_window(nick);
         self.ui.lists.close_lists.click();
-
-        if (typeof self.ui.show_window_callback == 'function') {
-            self.ui.show_window_callback(nick);
-        }
     });
 
     this.show_window(this.ui.echoes.attr('windowname'));
@@ -310,7 +307,7 @@ EchoesUi.prototype.opened_windows = function() {
  * @returns {null}
  */
 EchoesUi.prototype.remove_channel = function(chan) {
-    this.ui.lists.channels.find('li[windowname="' + chan + '"]').remove();
+    this.ui.lists.windows.find('li[windowname="' + chan + '"]').remove();
 }
 
 /**
@@ -333,7 +330,7 @@ EchoesUi.prototype.clear_channels = function() {
     var self = this;
 
     this.ui.wall.find('div[windowtype="channel"]').each(function() {
-        self.ui.lists.channels.find('li[windowname="' + $(this).attr('windowname') + '"]').remove();
+        self.ui.lists.windows.find('li[windowname="' + $(this).attr('windowname') + '"]').remove();
     });
 }
 /**
@@ -343,29 +340,6 @@ EchoesUi.prototype.clear_channels = function() {
  */
 EchoesUi.prototype.clear_nicknames = function() {
     this.ui.lists.nicknames.html('');
-}
-
-/**
- * Add a channel element to the channels list if it doesn't exist already
- * Also adds a 'channel' type window
- * Does not show the window
- *
- * @param   {string} chan Which name to use
- *
- * @returns {null}
- */
-EchoesUi.prototype.add_channel = function(chan) {
-    if (this.ui.lists.channels.find('li[windowname="' + chan + '"]').length > 0) {
-        return;
-    }
-
-    var chan_element =
-        $('<li>')
-            .attr('windowname', chan)
-            .text(chan)
-
-    this.ui.lists.channels.append(chan_element);
-    this.add_window(chan, 'channel');
 }
 
 /**
@@ -405,23 +379,29 @@ EchoesUi.prototype.add_nickname = function(nick) {
 EchoesUi.prototype.add_window = function(name, type) {
     type = type || 'channel';
 
-    if (this.ui.wall.find('div[windowname="' + name + '"]').length > 0) {
-        return;
+    if (this.ui.wall.find('div[windowname="' + name + '"]').length == 0) {
+        this.ui.wall.append(
+            $('<div>')
+                .attr('windowname', name)
+                .attr('windowtype', type)
+                .css('display', 'none')
+                .append(
+                    $('<ul>') // used for window hidden storage, such as nicklist
+                        .css('display', 'none')
+                )
+        );
+
+        if (type == 'nickname') {
+            this.status('Say hi to ' + name, name);
+        }
     }
 
-    this.ui.wall.append(
-        $('<div>')
-            .attr('windowname', name)
-            .attr('windowtype', type)
-            .css('display', 'none')
-            .append(
-                $('<ul>') // used for window hidden storage, such as nicklist
-                    .css('display', 'none')
-            )
-    );
-
-    if (type == 'nickname') {
-        this.status('Say hi to ' + name, name);
+    if (this.ui.lists.windows.find('li[windowname="' + name + '"]').length == 0) {
+        this.ui.lists.windows.append(
+            $('<li>')
+                .attr('windowname', name)
+                .text(name)
+        )
     }
 }
 
@@ -496,7 +476,7 @@ EchoesUi.prototype.get_window_state = function(on_window) {
 
 /**
  * Shows a window on the wall and hides all others
- * Also sets the CSS ui selected window property in the nickname/channel list
+ * Also sets the CSS ui selected window property in the nickname/windows list
  * Also calls EchoesUi#scroll_down and focuses the input echo_input
  * Also changes the window_title position based on type of window
  *
@@ -509,15 +489,17 @@ EchoesUi.prototype.get_window_state = function(on_window) {
 EchoesUi.prototype.show_window = function(name) {
     var self = this;
 
-    this.ui.lists.channels.find('li').removeClass('ui_selected_window');
-    this.ui.lists.nicknames.find('li').removeClass('ui_selected_window');
-    this.ui.lists.channels.find('li[windowname="' + name + '"]').addClass('ui_selected_window');
-    this.ui.lists.nicknames.find('li[windowname="' + name + '"]').addClass('ui_selected_window');
+    this.ui.lists.windows.find('li').removeClass('ui_selected_window');
+    this.ui.lists.windows.find('li[windowname="' + name + '"]').addClass('ui_selected_window');
 
     this.ui.wall.find('div:visible:first').hide();
     this.ui.window_title.hide();
 
     this.ui.wall.find('div[windowname="' + name + '"]').fadeIn('fast', function() {
+        if (typeof self.ui.show_window_callback == 'function') {
+            self.ui.show_window_callback(name);
+        }
+
         self.ui.window_title.text(name);
         self.ui.window_title.show();
 
@@ -525,7 +507,6 @@ EchoesUi.prototype.show_window = function(name) {
             case 'nickname':
                 self.toggle_encrypt_icon(true);
                 self.clear_nicknames();
-                self.add_nickname(name);
             break;
             case 'channel':
                 self.toggle_encrypt_icon(false);
@@ -539,6 +520,8 @@ EchoesUi.prototype.show_window = function(name) {
 
         self.scroll_down();
         self.ui.input.focus();
+
+        self.progress(101);
     });
 }
 
@@ -563,10 +546,7 @@ EchoesUi.prototype.refresh_nicklist = function(window_name) {
  * @returns {null}
  */
 EchoesUi.prototype.click_window = function(name) {
-    win_object = this.ui.lists.nicknames.find('li[windowname="' + name + '"]');
-    if (win_object.length == 0) {
-        win_object = this.ui.lists.channels.find('li[windowname="' + name + '"]');
-    }
+    win_object = this.ui.lists.windows.find('li[windowname="' + name + '"]');
 
     if (win_object.length > 0) {
         win_object.click();
@@ -689,9 +669,9 @@ EchoesUi.prototype.popup_center = function() {
 EchoesUi.prototype.progress = function(percent) {
     if (percent < 0
         || percent > 100) {
-        this.ui.progress_bar.hide();
+        this.ui.progress_bar.fadeOut('fast');
     } else {
-        this.ui.progress_bar.show();
+        this.ui.progress_bar.fadeIn('fast');
     }
     this.ui.progress_bar.attr('value', percent);
 }

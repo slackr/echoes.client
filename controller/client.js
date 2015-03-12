@@ -77,13 +77,14 @@ EchoesClient.prototype.execute_command = function(params) {
             }
         break;
         case '/clear':
-            this.ui.ui.echoes.html('');
+            this.ui.active_window().html('');
         break;
         case '/pm':
         case '/msg':
         case '/private':
         case '/query':
             var nick = params[0];
+            this.ui.progress(10);
             this.socket.sio.emit('/pm', nick);
         break;
         case '/w':
@@ -588,6 +589,11 @@ EchoesClient.prototype.keyx_send_key = function(endpoint) {
  * @returns {null}
  */
 EchoesClient.prototype.update_encrypt_state = function(for_window) {
+    if (this.ui.get_window(for_window).attr('windowtype') != 'nickname') {
+        this.log('window encrypt state update skipped for non-nickname window: ' + for_window, 0);
+        return;
+    }
+
     var sent_decrypt_key = (this.get_nickchain_property(for_window, 'keysent') == true ? true : false);
     var received_encrypt_key = (this.get_nickchain_property(for_window, 'public_key') != null ? true : false);
 

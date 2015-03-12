@@ -180,18 +180,18 @@ body {
     padding: 10px;
 }
 
-#menu_channels, #menu_nicknames {
+#menu_windows, #menu_nicknames {
     cursor: pointer;
     padding: 5px;
 }
-#menu_channels {
+#menu_windows {
     float: left;
 }
 #menu_nicknames {
     float: right;
 }
 
-#nicknames, #channels {
+#nicknames, #windows {
     list-style-type: none;
     width: 200px;
     position: fixed;
@@ -203,7 +203,7 @@ body {
     padding-top: 10px;
 }
 
-#nicknames > li, #channels > li {
+#nicknames > li, #windows > li {
     cursor: pointer;
     padding: 10px;
     overflow: hidden;
@@ -213,7 +213,7 @@ body {
     right: 0;
     overflow-y: auto;
 }
-#channels {
+#windows {
     left: 0;
     overflow-y: auto;
 }

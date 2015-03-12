@@ -56,17 +56,17 @@ body {
     color: rgb(255, 255, 255);
 }
 
-#nicknames, #channels {
+#nicknames, #windows {
     background-color: rgb(255, 255, 255);
     color: rgb(66, 133, 244);
     box-shadow: 0px 0px 3px 0px rgb(0, 0, 0);
 }
 
-#nicknames > li, #channels > li { /* windows */
+#nicknames > li, #windows > li { /* windows */
     font-weight: bold;
 }
 
-#nicknames > li:hover, #channels > li:hover, .ui_selected_window {
+#nicknames > li:hover, #windows > li:hover, .ui_selected_window {
     background: rgb(244, 244, 244);
     color: rgb(66, 133, 244);
 }

@@ -81,6 +81,7 @@ EchoesSocket.prototype.attach_socket_events = function() {
         self.client.ui.add_nickname(nick);
         self.client.ui.ui.lists.nicknames.find('li[windowname="' + nick + '"]')
             .click();
+        self.client.ui.progress(50);
     });
 
     this.sio.on('*join', function(join) {
@@ -88,7 +89,7 @@ EchoesSocket.prototype.attach_socket_events = function() {
         var nick = join.nickname;
 
         if (nick == self.client.id.identity) {
-            self.client.ui.add_channel(chan);
+            self.client.ui.add_window(chan, 'channel');
             self.client.execute_command(['/who', chan]);
             self.client.ui.show_window(chan);
         } else {
@@ -130,7 +131,7 @@ EchoesSocket.prototype.attach_socket_events = function() {
         self.client.ui.clear_channels();
 
         for (var i in list.channels) {
-            self.client.ui.add_channel(list.channels[i]);
+            self.client.ui.add_window(list.channels[i], 'channel');
         }
     });
     this.sio.on('*list', function(list){
