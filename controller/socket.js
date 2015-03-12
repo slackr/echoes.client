@@ -41,6 +41,7 @@ EchoesSocket.prototype.constructor = EchoesSocket;
  * @returns {null}
  */
 EchoesSocket.prototype.initialize = function() {
+    this.client.ui.progress(10);
     if (! this.client.id.identity) {
         this.log('Nickname is null, abort init', 3);
         return;
@@ -51,6 +52,7 @@ EchoesSocket.prototype.initialize = function() {
 
     var socket_query = encodeURI('session_id=' + session_id + '&nickname=' + nickname);
 
+    this.client.ui.progress(30);
     this.sio = null;
     this.sio = io(AppConfig.WS_SERVER, {
         query: socket_query,
@@ -74,6 +76,7 @@ EchoesSocket.prototype.attach_socket_events = function() {
     var self = this;
 
     this.sio.on('*me', function(me) {
+        self.client.ui.progress(101);
         self.client.ui.status('Hi ' + self.client.id.identity + ', /join a channel and say something!', self.client.ui.ui.echoes.attr('windowname'));
     });
 
@@ -213,7 +216,7 @@ EchoesSocket.prototype.attach_socket_events = function() {
             self.log('keyx method not supported, sending back notification', 3);
             return;
         }
-
+        
         self.client.keyx_import(data);
     });
     this.sio.on('*keyx_unsupported', function(data){
@@ -230,6 +233,8 @@ EchoesSocket.prototype.attach_socket_events = function() {
         self.client.keyx_off(data.from, false); // do not emit another !keyx_off
     });
     this.sio.on('*keyx_sent', function(data){
+        self.client.ui.progress(101);
+
         var nick = data.to;
 
         self.client.set_nickchain_property(nick, {
@@ -243,12 +248,14 @@ EchoesSocket.prototype.attach_socket_events = function() {
     });
 
     this.sio.on('*eecho_sent', function(data){
+        self.client.ui.progress(101);
         self.log('eecho sent: ' + data.to + ': ' + JSON.stringify(data), 0);
     });
 
     this.sio.on('*error', function(message){
         self.client.ui.error(message, null, true);
         self.log(message, 3);
+        self.client.ui.progress(101);
     });
     this.sio.on('*fatal', function(e) {
         self.log('fatal! ' + e, 3);
@@ -279,10 +286,12 @@ EchoesSocket.prototype.attach_socket_events = function() {
                 });
             break
         }
+        self.client.ui.progress(101);
     });
 
     this.sio.on('error', function(e) {
         self.client.ui.error(e);
+        self.client.ui.progress(101);
     });
     this.sio.on('connect_error', function(e) {
         self.log('connect error: ' + e, 3);
@@ -290,6 +299,7 @@ EchoesSocket.prototype.attach_socket_events = function() {
             self.client.ui.error({ error: 'Connection failed :( ', debug: e });
             self.last_error = e.toString();
         }
+        self.client.ui.progress(101);
     });
     this.sio.on('connect_timeout', function(e) {
         self.log('connect timeout: ' + e, 3);
@@ -297,13 +307,16 @@ EchoesSocket.prototype.attach_socket_events = function() {
             self.client.ui.error({ error: 'Connection failed :( ', debug: e });
             self.last_error = e.toString();
         }
+        self.client.ui.progress(101);
     });
     this.sio.on('reconnect_error', function(e) {
         self.log('reconnect error ' + e, 3);
+        self.client.ui.progress(101);
     });
     this.sio.on('reconnect', function() {
         self.last_error = null;
         self.client.join_channels();
+        self.client.ui.progress(101);
     });
     this.sio.once('connect', function() {
         self.last_error = null;
@@ -315,6 +328,7 @@ EchoesSocket.prototype.attach_socket_events = function() {
             return;
         }
 
+        self.client.ui.progress(101);
     });
     this.sio.on('disconnect', function() {
         self.client.wipe_all_nickchains(); // bye bye nick keys
@@ -322,5 +336,8 @@ EchoesSocket.prototype.attach_socket_events = function() {
         self.client.update_encrypt_state(self.client.ui.active_window().attr('windowname'));
 
         self.client.ui.status('Disconnected :(', null, true);
+        self.client.ui.progress(101);
     });
+
+    this.client.ui.progress(50);
 }

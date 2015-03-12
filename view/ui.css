@@ -267,7 +267,7 @@ body {
 #progress_bar {
     position: absolute;
     display: none;
-    height: 10px;
+    height: 5px;
     width: 100%;
     bottom: 50px;
     border: 0px;

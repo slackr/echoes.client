@@ -47,10 +47,12 @@ $(document).ready(function() {
     });
 
     /**
-     * generate new key(s) if supported
+     * authenticate and generate new key(s) if crypto is supported
      */
     if ($client.crypto.browser_support.crypto.supported) {
+        $client.ui.progress(10);
         $client.id.load_identity().then(function() {
+            $client.ui.progress(30);
             $client.connect();
         }).catch(function(e) {
             $client.id.device = $client.crypto.bytes_to_hex($client.crypto.new_iv(32));
