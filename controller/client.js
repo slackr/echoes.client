@@ -358,7 +358,7 @@ EchoesClient.prototype.send_encrypted_echo = function(nick, echo) {
             avatar: '',
             echo: echo,
             window: nick,
-            nick: nick,
+            nick: self.id.identity,
             broadcast: and_echoes,
         });
     }).catch(function(e) {
