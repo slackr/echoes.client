@@ -82,7 +82,8 @@ EchoesSocket.prototype.attach_socket_events = function() {
     });
 
     this.sio.on('*pm', function(nick) {
-        self.client.ui.add_nickname(nick);
+        self.client.ui.add_window(nick, 'nickname');
+        self.client.ui.ui.lists.windows.find('li[windowname="' + nick + '"]').click();
         self.client.ui.progress(50);
     });
 
