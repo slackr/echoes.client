@@ -106,6 +106,10 @@ EchoesUi.prototype.attach_events = function() {
         self.ui.lists.close_lists.click();
     });
 
+    this.ui.input.focus(function() { // firefox webapp autoscroll on focus and keyboard popup
+       setTimeout(function(){ self.ui.wall.scrollTop(self.ui.wall.prop("scrollHeight")); }, 500);
+    });
+
     this.show_window(this.ui.echoes.attr('windowname'));
 }
 
