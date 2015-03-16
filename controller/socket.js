@@ -76,14 +76,13 @@ EchoesSocket.prototype.attach_socket_events = function() {
     var self = this;
 
     this.sio.on('*me', function(me) {
+        self.client.auto_join_channels();
         self.client.ui.progress(101);
         self.client.ui.status('Hi ' + self.client.id.identity + ', /join a channel and say something!', self.client.ui.ui.echoes.attr('windowname'));
     });
 
     this.sio.on('*pm', function(nick) {
         self.client.ui.add_nickname(nick);
-        self.client.ui.ui.lists.nicknames.find('li[windowname="' + nick + '"]')
-            .click();
         self.client.ui.progress(50);
     });
 
@@ -154,7 +153,7 @@ EchoesSocket.prototype.attach_socket_events = function() {
         }
 
         self.client.ui.refresh_nicklist(chan);
-        self.client.ui.status("Who's on " + chan + "? "  + nicks.join(', '), chan, true);
+        self.client.ui.status("Who's in " + chan + "? "  + nicks.join(', '), chan, true);
     });
     this.sio.on('*connect', function(who) {
         var nick = who.nickname;
@@ -298,7 +297,7 @@ EchoesSocket.prototype.attach_socket_events = function() {
     this.sio.on('connect_error', function(e) {
         self.log('connect error: ' + e, 3);
         if (e.toString() != self.last_error) {
-            self.client.ui.error({ error: 'Connection failed :( ', debug: e });
+            self.client.ui.error({ error: 'Connection failed :( ', debug: e }, null, true);
             self.last_error = e.toString();
         }
         self.client.ui.progress(101);
@@ -306,7 +305,7 @@ EchoesSocket.prototype.attach_socket_events = function() {
     this.sio.on('connect_timeout', function(e) {
         self.log('connect timeout: ' + e, 3);
         if (e.toString() != self.last_error) {
-            self.client.ui.error({ error: 'Connection failed :( ', debug: e });
+            self.client.ui.error({ error: 'Connection failed :( ', debug: e }, null, true);
             self.last_error = e.toString();
         }
         self.client.ui.progress(101);
@@ -317,7 +316,7 @@ EchoesSocket.prototype.attach_socket_events = function() {
     });
     this.sio.on('reconnect', function() {
         self.last_error = null;
-        self.client.join_channels();
+        self.client.ui.status('Reconnected!', null, true);
         self.client.ui.progress(101);
     });
     this.sio.once('connect', function() {

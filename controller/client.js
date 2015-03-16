@@ -172,7 +172,7 @@ EchoesClient.prototype.send_echo = function() {
  *
  * @returns {null}
  */
-EchoesClient.prototype.join_channels = function() {
+EchoesClient.prototype.auto_join_channels = function() {
     var self = this;
 
     this.log('Auto-joining previously joined channels...', 0);
