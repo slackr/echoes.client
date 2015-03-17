@@ -14,7 +14,9 @@
     "orientation": [ "portrait" ],
     "type": "privileged",
     "permissions": {
-        "systemXHR": "For identity management API requests"
+        "systemXHR": {
+            "description": "For identity management API requests"
+        }
     },
     "icons": {
         "16": "/app/assets/icon-16.png",
