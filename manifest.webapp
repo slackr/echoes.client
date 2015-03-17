@@ -1,6 +1,6 @@
 {
-    "name": "Echoes Encrypted Messaging",
-    "description": "echoes ))) end-to-end encrypted messaging",
+    "name": "Echoes",
+    "description": "Echoes ))) End-to-End Encrypted Messaging",
     "version": "0.1",
     "default_locale": "en",
     "installs_allowed_from": [
@@ -14,7 +14,9 @@
     "orientation": [ "portrait" ],
     "type": "privileged",
     "permissions": {
-        "systemXHR": {}
+        "systemXHR": {
+            "description": "For identity management API requests"
+        }
     },
     "icons": {
         "16": "/app/assets/icon-16.png",
