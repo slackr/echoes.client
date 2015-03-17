@@ -1,6 +1,7 @@
 {
     "name": "Echoes Encrypted Messaging",
-    "description": "echoes ))) end-to-end encrypted messaging",
+    "description": "Echoes ))) End-to-End Encrypted Messaging",
+    "short_name": "Echoes",
     "version": "0.1",
     "manifest_version": 2,
     "minimum_chrome_version": "39",
