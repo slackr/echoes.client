@@ -165,13 +165,17 @@ EchoesSocket.prototype.attach_socket_events = function() {
         var nick = who.nickname;
 
         self.client.ui.ui.wall.find('div[windowtype="channel"]').each(function() {
+            var window_name = $(this).attr('windowname');
             var nicklist = $(this).find('ul:first');
-            nicklist.find('li[nickname="' + nick + '"]').remove();
+            nicklist.find('li[nickname="' + nick + '"]').each(function() {
+                self.client.ui.status(nick + ' disconnected!', window_name, false);
+                $(this).remove();
+            })
         });
         self.client.ui.remove_nickname(nick);
 
         self.client.keyx_off(nick, false);
-        self.client.ui.status(nick + ' disconnected!', nick, true);
+        self.client.ui.status(nick + ' disconnected!', self.client.ui.ui.echoes.attr('windowname'));
     });
 
     this.sio.on('*echo', function(echo) {
@@ -222,17 +226,19 @@ EchoesSocket.prototype.attach_socket_events = function() {
         self.client.keyx_import(data);
     });
     this.sio.on('*keyx_unsupported', function(data){
-        self.log('keyx_unsupported incoming from: ' + data.from, 0);
-        self.client.keyx_off(data.from, false); // do not emit another !keyx_off
+        var nick = data.from;
+        self.log('keyx_unsupported incoming from: ' + nick, 0);
+        self.client.keyx_off(nick, false); // do not emit another !keyx_off
 
-        self.client.ui.status('Key rejected, falling back...');
+        self.client.ui.status('Key type not supported, falling back...', nick, true);
 
-        self.client.set_nickchain_property(data.from, { keychain: 'asym' });
-        self.client.keyx_send_key(data.from);
+        self.client.set_nickchain_property(nick, { keychain: 'asym' });
+        self.client.keyx_send_key(nick);
     });
     this.sio.on('*keyx_off', function(data){
-        self.log('keyx_off incoming from: ' + data.from, 0);
-        self.client.keyx_off(data.from, false); // do not emit another !keyx_off
+        var nick = data.from;
+        self.log('keyx_off incoming from: ' + nick, 0);
+        self.client.keyx_off(nick, false); // do not emit another !keyx_off
     });
     this.sio.on('*keyx_sent', function(data){
         self.client.ui.progress(101);
@@ -245,7 +251,7 @@ EchoesSocket.prototype.attach_socket_events = function() {
 
         self.client.update_encrypt_state(nick);
 
-        self.client.ui.status('Public key sent to ' + nick + ' (' + self.client.crypto.keychain[self.client.get_nickchain_property(nick, 'keychain')].exported.hash + ')');
+        self.client.ui.status('Public key sent to ' + nick + ' (' + self.client.crypto.keychain[self.client.get_nickchain_property(nick, 'keychain')].exported.hash + ')', nick, true);
         self.log('keyx sent to: ' + nick + ': ' + JSON.stringify(data), 0);
     });
 

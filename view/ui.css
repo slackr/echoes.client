@@ -186,6 +186,7 @@ body {
 }
 #menu_windows {
     float: left;
+    position: relative;
 }
 #menu_nicknames {
     float: right;
@@ -321,4 +322,24 @@ body {
 
 .hidden {
     display: none;
+}
+
+#noti_bubble_all {
+    position: absolute;
+    top: 7px;
+    right: 0px;
+    padding: 0px 5px 0px 5px;
+    font-weight: normal;
+    font-size: 10px;
+    border-radius: 100%;
+    display: none;
+}
+
+#noti_bubble_each {
+    float: left;
+    padding: 0px 5px 0px 5px;
+    font-weight: normal;
+    font-size: 10px;
+    border-radius: 100%;
+    margin-right: 5px;
 }

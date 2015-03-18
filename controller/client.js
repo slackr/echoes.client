@@ -388,6 +388,8 @@ EchoesClient.prototype.keyx_off = function(endpoint, inform_endpoint) {
     this.wipe_nickchain(endpoint);
     this.update_encrypt_state(endpoint);
 
+    this.ui.error('Warning: Encryption has been turned off for: ' + endpoint, endpoint, true);
+
     if (inform_endpoint) {
         this.socket.sio.emit('!keyx_off', {
             to: endpoint
@@ -435,7 +437,7 @@ EchoesClient.prototype.keyx_import = function(data) {
                 keychain: kc,
             });
 
-            self.ui.status('Imported public key from ' + nick + ' (' + self.get_nickchain_property(nick, 'hash') + ')');
+            self.ui.status('Imported public key from ' + nick + ' (' + self.get_nickchain_property(nick, 'hash') + ')', nick, true);
             self.log(kc + ' pubkey import successful from: ' + nick + ' (' + self.get_nickchain_property(nick, 'hash') + ')', 0);
 
             if (kc == 'keyx') {
@@ -473,20 +475,20 @@ EchoesClient.prototype.keyx_import = function(data) {
                         return c.encrypt_asym(c.keychain['sym'].exported.key, nick_pubkey).then(function(){
                             self.ui.progress(101);
                             self.set_nickchain_property(nick, { encrypted_symkey: c.encrypted_segments });
-                            self.ui.status('Sucessfully generated symkey for ' + nick);
+                            self.ui.status('Sucessfully generated symkey for ' + nick, nick, true);
                         }).catch(function(e){
                             self.ui.progress(101);
-                            self.ui.error('Failed to encrypt symkey for ' + nick + ': ' + e.toString());
+                            self.ui.error({ error: 'Failed to encrypt symkey for ' + nick, debug: e.toString() }, nick, true);
                             self.log('encrypt_asym for symkey to ' + nick + ' failed: ' + e.toString(), 3);
                         });
                     }).catch(function(e){
                         self.ui.progress(101);
-                        self.ui.error('Failed to export symkey for ' + nick + ': ' + e.toString());
-                        self.log('export_key for symkey to ' + nick + ' failed: ' + e.toString(), 3);
+                        self.ui.error({ error: 'Failed to export symkey for ' + nick, debug: e.toString() }, nick, true);
+                        self.log('export_key for symkey to ' + nick + ' failed:', 3);
                     });
                 }).catch(function(e){
                     self.ui.progress(101);
-                    self.ui.error('Failed to generate symkey for ' + nick + ': ' + e.toString());
+                    self.ui.error({ error: 'Failed to generate symkey for ' + nick, debug: e.toString() }, nick, true);
                     self.log('generate_key for symkey to ' + nick + ' failed: ' + e.toString(), 3);
                 });
             }
@@ -495,7 +497,7 @@ EchoesClient.prototype.keyx_import = function(data) {
             self.wipe_nickchain(nick);
             self.update_encrypt_state(nick);
 
-            self.ui.error({ error: 'Failed hash public key from ' + nick, debug: kc + ': ' + e.toString() });
+            self.ui.error({ error: 'Failed hash public key from ' + nick, debug: kc + ': ' + e.toString() }, nick, true);
             self.log('hash: ' + e.toString(), 3);
         })
     }).catch(function(e) {
@@ -503,7 +505,7 @@ EchoesClient.prototype.keyx_import = function(data) {
         self.wipe_nickchain(nick);
         self.update_encrypt_state(nick);
 
-        self.ui.error({ error: 'Failed to import public key from ' + nick, debug: kc + ': ' +  e.toString() });
+        self.ui.error({ error: 'Failed to import public key from ' + nick, debug: kc + ': ' +  e.toString() }, nick, true);
         self.log('import key: ' + e.toString(), 3);
     });
 }
@@ -532,7 +534,7 @@ EchoesClient.prototype.keyx_new_key = function(endpoint, kc) {
     }
 
     this.ui.progress(20);
-    this.ui.status('Generating new session keys (' + kc + ')...');
+    this.ui.status('Generating new session keys (' + kc + ')...', null, true);
     this.log('generating new ' + kc + ' session keypair...', 0);
 
     var self = this;
@@ -546,7 +548,7 @@ EchoesClient.prototype.keyx_new_key = function(endpoint, kc) {
             return self.crypto.hash(self.crypto.keychain[kc].exported.public_key).then(function() {
                 self.ui.progress(101);
                 self.crypto.keychain[kc].exported.hash = self.crypto.resulting_hash.match(/.{1,8}/g).join(' ');
-                self.ui.status('Successfully generated new session key (' + kc + '): ' + self.crypto.keychain[kc].exported.hash);
+                self.ui.status('Successfully generated new session key (' + kc + '): ' + self.crypto.keychain[kc].exported.hash, null, true);
                 if (typeof endpoint != 'undefined'
                     && endpoint != null) {
                     self.log('sending ' + kc + ' public key to endpoint: ' + endpoint, 0);
@@ -554,15 +556,15 @@ EchoesClient.prototype.keyx_new_key = function(endpoint, kc) {
                 }
             }).catch(function(e) {
                 self.ui.progress(101);
-                self.ui.error('Failed to hash exported ' + kc + ' key: ' + e.toString());
+                self.ui.error({ error: 'Failed to hash exported ' + kc + ' key', debug: e.toString() });
             });
         }).catch(function(e) {
             self.ui.progress(101);
-            self.ui.error('Failed to export key: ' + e.toString());
+            self.ui.error({ error: 'Failed to export ' + kc + ' key', debug: e.toString() });
         });
     }).catch(function(e) {
         self.ui.progress(101);
-        self.ui.error('Failed to generate keypair: ' + e.toString());
+        self.ui.error({ error: 'Failed to generate ' + kc + ' keypair', debug: e.toString() });
     });
 }
 

@@ -53,6 +53,9 @@ function EchoesUi() {
             yes: $('#popup_yes'),
             no: $('#popup_no'),
         },
+        notification: {
+            bubble_all: $('#noti_bubble_all')
+        },
         progress_bar: $('#progress_bar'),
         show_window_callback: null, // function to call after show_window()
     }
@@ -225,6 +228,10 @@ EchoesUi.prototype.echo = function(echo) {
         div
             .clone()
             .appendTo(this.get_window(this.ui.echoes.attr('windowname')));
+    }
+
+    if (echo.window != this.active_window().attr('windowname')) {
+        this.notification_window_toggle(echo.window, true);
     }
 
     this.scroll_down();
@@ -525,6 +532,8 @@ EchoesUi.prototype.show_window = function(name) {
         self.scroll_down();
         self.ui.input.focus();
 
+        self.notification_window_toggle(name, false);
+
         self.progress(101);
     });
 }
@@ -678,4 +687,58 @@ EchoesUi.prototype.progress = function(percent) {
         this.ui.progress_bar.fadeIn('fast');
     }
     this.ui.progress_bar.attr('value', percent);
+}
+
+/**
+ * Toggle the notification bubble for all windows
+ *
+ * @param   {bool} on_off On or off
+ *
+ * @returns {null}
+ */
+EchoesUi.prototype.notification_all_toggle = function(on_off) {
+    on_off = on_off || false;
+
+    if (on_off) {
+        this.ui.notification.bubble_all.show();
+        this.log('notification bubble enabled for all', 0);
+    } else {
+        this.ui.notification.bubble_all.hide();
+        this.log('notification bubble disabled for all', 0);
+    }
+}
+
+/**
+ * Add notification bubble to window tab.
+ *
+ * If all notifications have been cleared, the all bubble is also cleared
+ *
+ * @param   {string} window_name Name of window
+ * @param   {bool} on_off   On or off
+ *
+ * @returns {null}
+ */
+EchoesUi.prototype.notification_window_toggle = function(window_name, on_off) {
+    on_off = on_off || false;
+
+    var noti_bubble_id = 'noti_bubble_each';
+    var win_object = this.ui.lists.windows.find('li[windowname="' + window_name + '"]');
+
+    if (win_object.length > 0) {
+        win_object.find('div[id="' + noti_bubble_id + '"]').remove();
+
+        this.log('notification bubble removed from window: ' + window_name, 0);
+
+        if (on_off) {
+            win_object.append(
+                $('<div>')
+                    .attr('id', noti_bubble_id)
+                    .text('!')
+            );
+            this.log('notification bubble added to window: ' + window_name, 0);
+            this.notification_all_toggle(true);
+        } else if (this.ui.lists.windows.find('li > div').length == 0) {
+            this.notification_all_toggle(false);
+        }
+    }
 }
