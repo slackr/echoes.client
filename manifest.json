@@ -2,7 +2,7 @@
     "name": "Echoes Encrypted Messenger",
     "description": "Echoes ))) End-to-End Encrypted Messaging",
     "short_name": "Echoes",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "manifest_version": 2,
     "minimum_chrome_version": "39",
     "app": {

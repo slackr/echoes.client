@@ -7,7 +7,11 @@
 
 chrome.app.runtime.onLaunched.addListener(function() {
   chrome.app.window.create('view/ui.html', {
-    'bounds': {
+    id: 'echoes-encrypted-messenger',
+    //frame: {
+    //    type: "none"
+    //},
+    outerBounds: {
       'width': 500,
       'height': 600
     }

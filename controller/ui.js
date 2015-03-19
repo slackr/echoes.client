@@ -721,18 +721,18 @@ EchoesUi.prototype.notification_all_toggle = function(on_off) {
 EchoesUi.prototype.notification_window_toggle = function(window_name, on_off) {
     on_off = on_off || false;
 
-    var noti_bubble_id = 'noti_bubble_each';
+    var noti_bubble_class = 'noti_bubble_each';
     var win_object = this.ui.lists.windows.find('li[windowname="' + window_name + '"]');
 
     if (win_object.length > 0) {
-        win_object.find('div[id="' + noti_bubble_id + '"]').remove();
+        win_object.find('div[class="' + noti_bubble_class + '"]').remove();
 
         this.log('notification bubble removed from window: ' + window_name, 0);
 
         if (on_off) {
             win_object.append(
                 $('<div>')
-                    .attr('id', noti_bubble_id)
+                    .attr('class', noti_bubble_class)
                     .text('!')
             );
             this.log('notification bubble added to window: ' + window_name, 0);
