@@ -70,7 +70,7 @@ body {
     background: rgb(244, 244, 244);
     color: rgb(66, 133, 244);
 }
-
+rgb(66, 133, 244);
 .ui_window_me {
     opacity: 0.5;
 }
@@ -133,8 +133,12 @@ body {
     background-color:  rgb(66, 133, 244);
 }
 
-#noti_bubble_all, #noti_bubble_each {
+#noti_bubble_all, .noti_bubble_each {
     background-color: rgb(255, 0, 0);
     color: rgb(255, 255, 255);
     /*box-shadow: 1px 1px 1px rgb(94, 94, 94);*/
+}
+
+#menubar, #input, #wall {
+    border-color: rgb(66, 133, 244);
 }

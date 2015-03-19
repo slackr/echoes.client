@@ -29,15 +29,15 @@ body {
     height: 100%;
 }
 
+input:focus {
+    outline: none;
+}
+
 #echo_input {
     border: 0px;
     font-size: 25px;
     width: 100%;
     padding-right: 48px;
-}
-
-#echo_input:focus {
-    outline: none;
 }
 
 #wall {
@@ -46,6 +46,8 @@ body {
     top: 50px;
     bottom: 50px;
     overflow-y: auto;
+    border-width: 0px 1px 0px 1px;
+    border-style: solid;
 }
 #wall > div {
     margin: 0;
@@ -154,20 +156,29 @@ body {
     padding: 0px 5px 5px 5px;
 }
 
-#menubar, #input {
+#menubar {
     position: fixed;
     width: 100%;
     height: 50px;
     list-style-type: none;
     font-size: 25px;
-}
-#menubar {
+    -webkit-app-region: drag;
     z-index: 101;
     top: 0;
     padding: 5px;
+    border-width: 0px 1px 0px 1px;
+    border-style: solid;
 }
+
 #input {
+    position: fixed;
+    width: 100%;
+    height: 50px;
+    list-style-type: none;
+    font-size: 25px;
     bottom: 0;
+    border-width: 0px 1px 0px 1px;
+    border-style: solid;
 }
 
 #input_wrapper {
@@ -181,6 +192,7 @@ body {
 }
 
 #menu_windows, #menu_nicknames {
+    -webkit-app-region: no-drag;
     cursor: pointer;
     padding: 5px;
 }
@@ -201,7 +213,14 @@ body {
     display: none;
     z-index: 100;
     font-size: 15px;
-    padding-top: 10px;
+    padding: 10px 0px 10px 0px;
+    overflow-y: auto;
+}
+#nicknames {
+    right: 0;
+}
+#windows {
+    left: 0;
 }
 
 #nicknames > li, #windows > li {
@@ -210,23 +229,12 @@ body {
     overflow: hidden;
 }
 
-#nicknames {
-    right: 0;
-    overflow-y: auto;
-}
-#windows {
-    left: 0;
-    overflow-y: auto;
-}
 
 #close_lists {
     position: fixed;
     height: 100%;
     width: 100%;
     display: none;
-}
-
-#close_lists {
     z-index: 99;
 }
 
@@ -309,11 +317,7 @@ body {
     position: static;
 }
 .register_field_input {
-    /*right: 0;
-    position: absolute;*/
     width: 100%;
-    outline: none;
-
     border: 0px;
     border-bottom-width: 1px;
     border-bottom-style: solid;
@@ -335,7 +339,7 @@ body {
     display: none;
 }
 
-#noti_bubble_each {
+.noti_bubble_each {
     float: left;
     padding: 0px 5px 0px 5px;
     font-weight: normal;
