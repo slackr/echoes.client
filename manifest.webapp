@@ -1,7 +1,7 @@
 {
     "name": "Echoes",
     "description": "Echoes ))) End-to-End Encrypted Messaging",
-    "version": "0.1.2",
+    "version": "0.1.3",
     "default_locale": "en",
     "installs_allowed_from": [
         "*"
@@ -24,6 +24,7 @@
         "32": "/app/assets/icon-32.png",
         "48": "/app/assets/icon-48.png",
         "64": "/app/assets/icon-64.png",
-        "128": "/app/assets/icon-128.png"
+        "128": "/app/assets/icon-128.png",
+        "512": "/app/assets/icon-512.png"
     }
 }
