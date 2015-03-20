@@ -23,6 +23,30 @@ function EchoesClient() {
      * @type Object A hash of nicknames and their imported keys/symkeys and keysent status
      */
     this.nickchain = {};
+
+    this.commands = {
+        offline: {
+            '/clear_storage': 'Delete identity data from storage',
+            '/connect': 'Initiate a new connection to the server. Identity will be re-authenticated',
+            '/config': 'Modify the value of a config variable for the session: /config [key] [val]',
+            '/disconnect': 'Disconnect the current session to the server',
+            '/clear': 'Clear the current window text',
+            '/window': 'Switch to a new window: /window [windowname]',
+            '/help': 'Show a list of available commands',
+        },
+        online: {
+            '/echo': 'Send regular echo to nick/#chan: /echo [target] [text]',
+            '/eecho': 'Send encrypted echo to nickname: /eecho [nick] [text]',
+            '/pm': 'Initiate a private message session with nick: /pm [nick]',
+            '/keyx': 'Initiate key exchange with nick: /keyx [nick]',
+            '/keyx_off': 'Disable encryption with nick (will also notify nick): /keyx_off [nick]',
+            '/join': 'Join a channel: /join [#chan]',
+            '/part': 'Part a channel: /part [#chan]',
+            '/list': 'Retrieve a list of all active channels from the server',
+            '/ulist': 'Retrieve a list of channels you are in from the server',
+            '/who': 'Show a list of users currently joined to a channel: /who [#chan]',
+        }
+    }
 }
 EchoesClient.prototype = Object.create(EchoesObject.prototype);
 EchoesClient.prototype.constructor = EchoesClient;
@@ -45,11 +69,21 @@ EchoesClient.prototype.execute_command = function(params) {
     var command = params[0];
     params.shift();
 
+    if (typeof this.commands.offline[command] == 'undefined'
+        && ! this.is_connected()) {
+        this.ui.error('Not connected to a server. /connect first!');
+        return;
+    }
+
     switch (command) {
         case '/clear_storage':
         case '/storage_clear':
-            this.ui.popup('Storage', 'Are you sure you want to clear the app storage? Identity will be lost...', 'CANCEL', 'CLEAR STORAGE', null, function() {
+            this.ui.popup('Storage', 'Are you sure you want to clear the app storage? Identity will be lost and you will be disconnected...', 'CANCEL', 'CLEAR STORAGE', null, function() {
                 self.id.storage.clear();
+                if (self.is_connected()) {
+                    self.socket.sio.disconnect();
+                }
+
                 self.ui.popup('Storage', 'The storage was cleared.', 'NEW IDENTITY', 'RECOVER',
                     function() {
                         self.register_show();
@@ -58,6 +92,30 @@ EchoesClient.prototype.execute_command = function(params) {
                         self.recovery_show();
                     });
             });
+        break;
+        case '/reconnect':
+        case '/connect':
+            if (self.is_connected()) {
+                self.ui.popup('Connect', 'You are already connected! Reconnect?', 'RECONNECT', 'CANCEL', function() {
+                    self.socket.sio.disconnect();
+                    self.ui.popup_close();
+                    self.connect();
+                });
+            } else {
+                self.connect();
+            }
+        break;
+        case '/quit':
+        case '/disconnect':
+            if (self.is_connected()) {
+                self.ui.popup('Disconnect', 'Are you sure you want to disconnect?', 'DISCONNECT', 'CANCEL', function() {
+                    self.socket.sio.disconnect();
+                    self.ui.popup_close();
+                    self.ui.error('You have been disconnected. To reconnect, reload the app or type /connect');
+                });
+            } else {
+                self.ui.error('You are not connected. /connect first!');
+            }
         break;
         case '/config':
             switch(params[0]) {
@@ -98,16 +156,17 @@ EchoesClient.prototype.execute_command = function(params) {
             }
         break;
         case '/echo':
-            var chan = params[0];
+            var to = params[0];
             var echo = params[1];
 
             this.ui.echo({
                 nick: this.id.identity,
                 type: 'out',
                 echo: echo,
+                window: to,
             })
 
-            this.socket.sio.emit('/echo', { echo: echo, to: chan });
+            this.socket.sio.emit('/echo', { echo: echo, to: to });
         break;
         case '/eecho':
             var nick = params[0];
@@ -115,12 +174,16 @@ EchoesClient.prototype.execute_command = function(params) {
 
             this.send_encrypted_echo(nick, plaintext);
         break;
+        case '/encryption_on':
+        case '/key_exchange':
         case '/keyx':
             this.keyx_send_key(params[0]);
         break;
+        case '/encryption_off':
         case '/keyx_off':
             this.keyx_off(params[0], true);
         break;
+
         default:
             this.socket.sio.emit(command, params);
             this.log('passed unhandled command to server: ' + command + ' ' + params.join(' '), 0);
@@ -139,11 +202,6 @@ EchoesClient.prototype.execute_command = function(params) {
  * @returns {null}
  */
 EchoesClient.prototype.send_echo = function() {
-    if (! this.is_connected()) {
-        this.ui.error('Not connected :(');
-        return;
-    }
-
     var echo = this.ui.ui.input.val();
     var split = echo.trim().split(' ');
     var to = this.ui.active_window().attr('windowname');
@@ -792,7 +850,16 @@ EchoesClient.prototype.register_show = function(initial_message) {
             });
         },
         function() {
-            self.recovery_show();
+            var recovery_token = $('#' + fields['Recovery Token (if available)'].input_id).val();
+            if (recovery_token.length > 0) {
+                self.ui.progress(10);
+                self.register_submit().catch(function(e) {
+                    self.ui.progress(101);
+                    registration_message.text(e);
+                });
+            } else {
+                self.recovery_show();
+            }
         }
     );
 
@@ -909,7 +976,7 @@ EchoesClient.prototype.recovery_show = function() {
             $('#' + fields[field].input_id).focus();
         }
     }
-    this.ui.popup('Recover Identity', '', 'GET TOKEN', 'CANCEL',
+    this.ui.popup('Recover Identity', '', 'REQUEST TOKEN', 'CANCEL',
         function() {
             self.id.identity = self.ui.ui.popup.message.find('#register_input_nickname').val();
             self.id.email = self.ui.ui.popup.message.find('#register_input_email').val();
