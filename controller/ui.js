@@ -78,6 +78,8 @@ EchoesUi.prototype.attach_events = function() {
         self.ui.lists.close_lists.hide();
         self.ui.lists.nicknames.hide("slide", { direction: "right" }, 100);
         self.ui.lists.windows.hide("slide", { direction: "left" }, 100);
+        self.ui.buttons.nicknames.removeClass('clicked');
+        self.ui.buttons.windows.removeClass('clicked');
 
         self.ui.input.focus();
     });
@@ -85,6 +87,11 @@ EchoesUi.prototype.attach_events = function() {
     this.ui.buttons.nicknames.click(function() {
         self.ui.lists.nicknames.toggle("slide", { direction: "right" }, 100, function() {
             self.ui.lists.close_lists.toggle(self.ui.lists.windows.is(':visible') || self.ui.lists.nicknames.is(':visible'));
+            if (self.ui.lists.nicknames.is(':visible')) {
+                self.ui.buttons.nicknames.addClass('clicked');
+            } else {
+                self.ui.buttons.nicknames.removeClass('clicked');
+            }
         });
 
         self.ui.input.focus();
@@ -92,6 +99,11 @@ EchoesUi.prototype.attach_events = function() {
     this.ui.buttons.windows.click(function() {
         self.ui.lists.windows.toggle("slide", { direction: "left" }, 100, function() {
             self.ui.lists.close_lists.toggle(self.ui.lists.windows.is(':visible') || self.ui.lists.nicknames.is(':visible'));
+            if (self.ui.lists.windows.is(':visible')) {
+                self.ui.buttons.windows.addClass('clicked');
+            } else {
+                self.ui.buttons.windows.removeClass('clicked');
+            }
         });
 
         self.ui.input.focus();

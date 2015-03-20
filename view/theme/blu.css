@@ -111,10 +111,13 @@ rgb(66, 133, 244);
     font-weight: normal;
 }
 
-#popup_yes:hover
+.clicked
+,#popup_yes:hover
 ,#popup_no:hover
 ,#send:hover
-,#encrypt:hover {
+,#encrypt:hover
+,#menu_nicknames:hover
+,#menu_windows:hover {
     background-color: rgba(0, 0, 0, 0.1);
 }
 
