@@ -281,28 +281,36 @@ EchoesSocket.prototype.attach_socket_events = function() {
         self.log('fatal! ' + e, 3);
         switch (e) {
             case 'nick_exists':
-                self.client.ui.popup('Error', 'Nickname already connected :( Please try again', 'RETRY', null, function() {
+                self.client.ui.popup('Error', 'Nickname already connected! Please disconnect other clients first.', 'RETRY', null, function() {
                     self.client.connect();
-                })
+                });
             break
             case 'nick_invalid':
-                self.client.ui.popup('Error', 'Nickname is invalid :( Please try again', 'RETRY', null, function() {
+                self.client.ui.popup('Error', 'Nickname is invalid :( Please try again', 'RETRY', 'NEW IDENTITY', function() {
                     self.client.connect();
-                })
+                }, function() {
+                    self.client.register_show();
+                });
             break;
             case 'auth_invalid_session':
-                self.client.ui.popup('Error', 'Invalid session for ' + self.client.id.identity + '. Please log in again!', 'RETRY', null, function() {
+                self.client.ui.popup('Error', 'Invalid session for ' + self.client.id.identity + '. Please log in again!', 'RETRY', 'NEW IDENTITY', function() {
                     self.client.connect();
+                }, function() {
+                    self.client.register_show();
                 });
             break
             case 'auth_http_error':
-                self.client.ui.popup('Error', 'Server failed to verify identity for ' + self.client.id.identity + '. Try again later', 'RETRY', null, function() {
+                self.client.ui.popup('Error', 'Server failed to verify identity for ' + self.client.id.identity + '. Please try again later', 'RETRY', 'NEW IDENTITY', function() {
                     self.client.connect();
+                }, function() {
+                    self.client.register_show();
                 });
             break
             default:
-                self.client.ui.popup('Error', 'Server replied with an unknown error: ' + e + '. Try again later', 'RETRY', null, function() {
+                self.client.ui.popup('Error', 'Server replied with an unknown error: ' + e + '. Please try again later', 'RETRY', 'NEW IDENTITY', function() {
                     self.client.connect();
+                }, function() {
+                    self.client.register_show();
                 });
             break
         }

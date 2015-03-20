@@ -105,6 +105,11 @@ $(document).ready(function() {
         }
     });
 
+
+    $client.ui.ui.buttons.exit.click(function() {
+        $client.execute_command(['/exit']);
+    });
+
     $client.ui.ui.buttons.send.click(function() {
         $client.send_echo();
     });
