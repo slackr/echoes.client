@@ -37,6 +37,7 @@ function EchoesUi() {
         buttons: {
             nicknames: $('#menu_nicknames'),
             windows: $('#menu_windows'),
+            exit: $('#menu_exit'),
             encrypt: $('#encrypt'),
             send: $('#send'),
         },
