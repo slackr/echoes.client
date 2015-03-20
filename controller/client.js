@@ -76,6 +76,12 @@ EchoesClient.prototype.execute_command = function(params) {
     }
 
     switch (command) {
+        case '/quit':
+        case '/exit':
+            self.ui.popup('Exit', 'Are you sure you exit the app?', 'EXIT', 'CANCEL', function() {
+                window.close();
+            });
+        break;
         case '/clear_storage':
         case '/storage_clear':
             this.ui.popup('Storage', 'Are you sure you want to clear the app storage? Identity will be lost and you will be disconnected...', 'CANCEL', 'CLEAR STORAGE', null, function() {
@@ -105,7 +111,6 @@ EchoesClient.prototype.execute_command = function(params) {
                 self.connect();
             }
         break;
-        case '/quit':
         case '/disconnect':
             if (self.is_connected()) {
                 self.ui.popup('Disconnect', 'Are you sure you want to disconnect?', 'DISCONNECT', 'CANCEL', function() {
