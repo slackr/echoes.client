@@ -86,7 +86,7 @@ describe("EchoesCrypto", function() {
                     .then(resolved)
                     .catch(rejected);
             });
-        }
+        };
 
         var test_exportkey = function(kc, export_chain, export_expected_keytype) {
             it("should export '" + export_chain + "' key from keychain '" + kc + "'", function(done) {
@@ -103,10 +103,10 @@ describe("EchoesCrypto", function() {
                     .then(resolved)
                     .catch(rejected);
             });
-        }
+        };
 
-        for (var kc in test_keychains) {
-            test_genkey(kc);
+        for (var kct in test_keychains) {
+            test_genkey(kct);
         }
         for (var kc in test_keychains) {
             for (var export_chain in test_keychains[kc].export_chains) {
@@ -117,7 +117,7 @@ describe("EchoesCrypto", function() {
         /**
          * Hash test
          */
-        var hash_test = { value: 'test', expected: 'a94a8fe5ccb19ba61c4c0873d391e987982fbbd3'}
+        var hash_test = { value: 'test', expected: 'a94a8fe5ccb19ba61c4c0873d391e987982fbbd3'};
         it("should hash '" + hash_test.value + "' -> '" + hash_test.expected + "'", function(done) {
             var resolved = function(r) {
                 expect(c.resulting_hash).toEqual(hash_test.expected);
@@ -184,7 +184,7 @@ describe("EchoesCrypto", function() {
             unicode_word:  { value: "☃✪✫✯", expected: "☃✪✫✯" },
             au_mix:  { value: "test ☃❄❅", expected: "test ☃❄❅" },
             au_mix_long:  { value: "test ☃❄❅❆★☆✪✫✯⚝⚫⚹✵❉❋☃❄❅❆★☆✪✫✯⚝⚫⚹✵❉❋☃❄❅❆★☆✪✫✯⚝⚫⚹✵❉❋", expected: "test ☃❄❅❆★☆✪✫✯⚝⚫⚹✵❉❋☃❄❅❆★☆✪✫✯⚝⚫⚹✵❉❋☃❄❅❆★☆✪✫✯⚝⚫⚹✵❉❋" },
-        }
+        };
 
         var test_encrypt_decrypt = function(plaintext, plaintext_type, expected) {
             it("should encrypt plaintext using derived symkey for '" + plaintext_type + "'", function(done) {
@@ -250,7 +250,7 @@ describe("EchoesCrypto", function() {
                     .then(resolved)
                     .catch(rejected);
             });
-        }
+        };
 
         for (var pt in plaintexts) {
             test_encrypt_decrypt(plaintexts[pt].value, pt, plaintexts[pt].expected);

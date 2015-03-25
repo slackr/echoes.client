@@ -65,7 +65,7 @@ EchoesSocket.prototype.initialize = function() {
     this.attach_socket_events();
 
     this.log("connecting to " + AppConfig.WS_SERVER + "?" + socket_query + " as '" + nickname + "' with session_id: " + session_id, 1);
-}
+};
 
 /**
  * Attaches socket events to this.sio
@@ -284,7 +284,7 @@ EchoesSocket.prototype.attach_socket_events = function() {
                 self.client.ui.popup('Error', 'Nickname already connected! Please disconnect other clients first.', 'RETRY', null, function() {
                     self.client.connect();
                 });
-            break
+            break;
             case 'nick_invalid':
                 self.client.ui.popup('Error', 'Nickname is invalid :( Please try again', 'RETRY', 'NEW IDENTITY', function() {
                     self.client.connect();
@@ -298,21 +298,21 @@ EchoesSocket.prototype.attach_socket_events = function() {
                 }, function() {
                     self.client.register_show();
                 });
-            break
+            break;
             case 'auth_http_error':
                 self.client.ui.popup('Error', 'Server failed to verify identity for ' + self.client.id.identity + '. Please try again later', 'RETRY', 'NEW IDENTITY', function() {
                     self.client.connect();
                 }, function() {
                     self.client.register_show();
                 });
-            break
+            break;
             default:
                 self.client.ui.popup('Error', 'Server replied with an unknown error: ' + e + '. Please try again later', 'RETRY', 'NEW IDENTITY', function() {
                     self.client.connect();
                 }, function() {
                     self.client.register_show();
                 });
-            break
+            break;
         }
         self.client.ui.progress(101);
     });
@@ -368,4 +368,4 @@ EchoesSocket.prototype.attach_socket_events = function() {
     });
 
     this.client.ui.progress(50);
-}
+};

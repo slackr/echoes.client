@@ -18,4 +18,4 @@ var AppConfig = {
     ],
 
     PARALLAX_AUTH: 'https://echoes.im',
-}
+};

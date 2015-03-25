@@ -45,7 +45,7 @@ EchoesStorage.prototype.get_store = function() {
         this.store = localStorage;
         this.log('using DOM storage', 0);
     }
-}
+};
 
 /**
  * (async) Set a value in storage
@@ -74,7 +74,7 @@ EchoesStorage.prototype.set = function(key, value, callback) {
             }
         break;
     }
-}
+};
 
 /**
  * (async) Get a key value from storage
@@ -102,7 +102,7 @@ EchoesStorage.prototype.get = function(key, callback) {
             callback(obj);
         break;
     }
-}
+};
 
 /**
  * (async) Remove key from storage
@@ -128,7 +128,7 @@ EchoesStorage.prototype.remove = function(key, callback) {
             }
         break;
     }
-}
+};
 
 /**
  * Clear all keys from storage
@@ -155,4 +155,4 @@ EchoesStorage.prototype.clear = function(callback) {
     }
 
     this.log('storage of type: ' + this.store_type + ' was cleared', 1);
-}
+};

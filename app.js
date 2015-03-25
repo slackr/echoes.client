@@ -146,5 +146,5 @@ $(document).ready(function() {
      */
     $client.ui.ui.show_window_callback = function(w) {
         $client.update_encrypt_state(w);
-    }
+    };
 });

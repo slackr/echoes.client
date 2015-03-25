@@ -65,7 +65,7 @@ EchoesIdentity.prototype.generate_signing_keypair = function() {
     }).catch(function(e) {
         self.log('failed to generate signing keypair for new identity', 3);
     });
-}
+};
 
 /**
  * (async) Send a registration request
@@ -84,7 +84,7 @@ EchoesIdentity.prototype.register = function() {
         device: this.device,
         recovery_token: this.recovery_token,
         email: this.email,
-    }
+    };
 
     self.log('sending registration request with: ' + JSON.stringify(data), 0);
     return new Promise(function(resolve, reject) {
@@ -112,7 +112,7 @@ EchoesIdentity.prototype.register = function() {
             reject('Registration request transport failure');
         });
     });
-}
+};
 
 /**
  * (async) Load identity from storage and import the PEM private key
@@ -125,7 +125,7 @@ EchoesIdentity.prototype.load_identity = function() {
     return new Promise(function(resolve, reject) {
         self.storage.get('identity', function(data) {
             if (typeof data.identity == 'undefined'
-                || data.identity == null) {
+                || data.identity === null) {
                 self.log("no identity found in storage", 3);
                 reject('No identity found in storage');
             } else {
@@ -149,7 +149,7 @@ EchoesIdentity.prototype.load_identity = function() {
             }
         });
     });
-}
+};
 
 /**
  * (async) Save identity object to storage
@@ -171,7 +171,7 @@ EchoesIdentity.prototype.save_identity = function() {
         privkey: this.privkey,
         device: this.device,
         email: this.email,
-    }
+    };
 
     return new Promise(function(resolve, reject) {
         self.storage.set('identity', JSON.stringify(identity_data), function() {
@@ -179,7 +179,7 @@ EchoesIdentity.prototype.save_identity = function() {
             resolve();
         });
     });
-}
+};
 
 /**
  * (async) Initiate an authentication request
@@ -206,7 +206,7 @@ EchoesIdentity.prototype.auth_request = function() {
     var data = {
         identity: this.identity,
         device: this.device,
-    }
+    };
 
     return new Promise(function(resolve, reject) {
         $.ajax({
@@ -232,6 +232,7 @@ EchoesIdentity.prototype.auth_request = function() {
                             self.log('failed to sign nonce from auth-reply: ' + data.nonce + ', e: ' + e, 3);
                             reject(e);
                         });
+                default:
                 break;
             }
             self.log('auth request error: ' + data.message, 3);
@@ -243,7 +244,7 @@ EchoesIdentity.prototype.auth_request = function() {
             reject('Auth request transport failure');
         });
     });
-}
+};
 
 /**
  * (async) Reply to auth request with signed nonce
@@ -264,7 +265,7 @@ EchoesIdentity.prototype.auth_reply = function() {
         nonce: this.nonce,
         nonce_signature: this.nonce_signature,
         device: this.device,
-    }
+    };
 
     return new Promise(function(resolve, reject) {
         $.ajax({
@@ -280,6 +281,7 @@ EchoesIdentity.prototype.auth_reply = function() {
                     self.log('auth successful for ' + self.identity + ', session id stored in self.session_id', 0);
                     resolve();
                     return true;
+                default:
                 break;
             }
 
@@ -292,7 +294,7 @@ EchoesIdentity.prototype.auth_reply = function() {
             reject('Auth reply transport failure');
         });
     });
-}
+};
 
 /**
  * (async) Request a new recovery token
@@ -308,7 +310,7 @@ EchoesIdentity.prototype.recovery_token_request = function() {
         identity: this.identity,
         device: this.device,
         email: this.email,
-    }
+    };
 
     return new Promise(function(resolve, reject) {
         $.ajax({
@@ -324,6 +326,7 @@ EchoesIdentity.prototype.recovery_token_request = function() {
                     self.log('recovery token requested for ' + self.identity + '@' + self.device, 1);
                     resolve();
                     return true;
+                default:
                 break;
             }
             self.log('recovery token request error: ' + data.message, 3);
@@ -335,4 +338,4 @@ EchoesIdentity.prototype.recovery_token_request = function() {
             reject('Recovery token request transport failure');
         });
     });
-}
+};

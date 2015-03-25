@@ -27,7 +27,7 @@ function EchoesUi() {
                 broadcast: 'ui_echo_broadcast_icon',
             }
         }
-    }
+    };
 
     this.ui = {
         wall: $("#wall"),
@@ -59,7 +59,7 @@ function EchoesUi() {
         },
         progress_bar: $('#progress_bar'),
         show_window_callback: null, // function to call after show_window()
-    }
+    };
 
     this.attach_events();
 }
@@ -127,7 +127,7 @@ EchoesUi.prototype.attach_events = function() {
     });
 
     this.show_window(this.ui.echoes.attr('windowname'));
-}
+};
 
 /**
  * Scrolls the wall down
@@ -164,7 +164,7 @@ EchoesUi.prototype.echo = function(echo) {
     echo.broadcast = (echo.broadcast && echo.window != this.ui.echoes.attr('windowname') ? true : false);
     echo.encrypted = echo.encrypted || false;
     echo.avatar = echo.avatar || '';
-    echo.info = echo.info || (echo.nick ? echo.nick + ' @ ' : '') + (new Date).toLocaleString();
+    echo.info = echo.info || (echo.nick ? echo.nick + ' @ ' : '') + (new Date()).toLocaleString();
 
 /*
     <div class='convo'>
@@ -207,8 +207,7 @@ EchoesUi.prototype.echo = function(echo) {
             echo_extra_avatar_class = 'hidden';
             slide_direction = 'left';
         break;
-        case 'status':
-        default:
+        default: // case 'status'
             echo_class = 'ui_echo_in ui_echo';
             echo_bubble_class = 'ui_status_bubble';
             echo_extra_avatar_class = 'hidden';
@@ -223,13 +222,15 @@ EchoesUi.prototype.echo = function(echo) {
                 $('<span>')
                     .addClass('ui_echo_avatar ' + echo_extra_avatar_class)
                     .text(echo.avatar)
-                , $('<span>')
+                ,
+                $('<span>')
                     .addClass(echo_bubble_class)
                     .append(
                         $('<span>')
                             .addClass('ui_echo_text')
                             .text(echo.echo)
-                        , $('<span>')
+                        ,
+                        $('<span>')
                             .addClass('ui_echo_info')
                             .text(echo.info)
                     )
@@ -285,7 +286,7 @@ EchoesUi.prototype.status = function(status, where, and_echoes) {
 EchoesUi.prototype.error = function(error, where, and_echoes) {
     var error_out = error;
     if (typeof error == 'object') {
-        error_out = error.error + (AppConfig.LOG_LEVEL == 0 ? ' (' + error.debug + ')' : '');
+        error_out = error.error + (AppConfig.LOG_LEVEL === 0 ? ' (' + error.debug + ')' : '');
     }
 
     this.echo({
@@ -303,7 +304,7 @@ EchoesUi.prototype.error = function(error, where, and_echoes) {
  */
 EchoesUi.prototype.active_window = function() {
     return this.ui.wall.find('div:visible:first');
-}
+};
 
 /**
  * Find all the joined channels using windowtype element property
@@ -312,7 +313,7 @@ EchoesUi.prototype.active_window = function() {
  */
 EchoesUi.prototype.joined_channels = function() {
     return this.ui.wall.find('div[windowtype="channel"]');
-}
+};
 
 /**
  * Find all the opened windows
@@ -321,7 +322,7 @@ EchoesUi.prototype.joined_channels = function() {
  */
 EchoesUi.prototype.opened_windows = function() {
     return this.ui.wall.find('div');
-}
+};
 
 /**
  * Remove a channel element from the channels list using the windowname element property
@@ -332,7 +333,7 @@ EchoesUi.prototype.opened_windows = function() {
  */
 EchoesUi.prototype.remove_channel = function(chan) {
     this.ui.lists.windows.find('li[windowname="' + chan + '"]').remove();
-}
+};
 
 /**
  * Remove a nickname element from the nicknames list using the windowname element property
@@ -343,7 +344,7 @@ EchoesUi.prototype.remove_channel = function(chan) {
  */
 EchoesUi.prototype.remove_nickname = function(nick) {
     this.ui.lists.nicknames.find('li[windowname="' + nick + '"]').remove();
-}
+};
 
 /**
  * Empty the channels list
@@ -356,7 +357,7 @@ EchoesUi.prototype.clear_channels = function() {
     this.ui.wall.find('div[windowtype="channel"]').each(function() {
         self.ui.lists.windows.find('li[windowname="' + $(this).attr('windowname') + '"]').remove();
     });
-}
+};
 /**
  * Empty the nicknames list
  *
@@ -364,7 +365,7 @@ EchoesUi.prototype.clear_channels = function() {
  */
 EchoesUi.prototype.clear_nicknames = function() {
     this.ui.lists.nicknames.html('');
-}
+};
 
 /**
  * Adds a nickname element to the nicknames list if it doesn't exist already
@@ -379,13 +380,14 @@ EchoesUi.prototype.add_nickname = function(nick) {
         return;
     }
 
-    var nick_element =
+    var nick_element = 
         $('<li>')
-            .attr('windowname', nick)
-            .text(nick)
+          .attr('windowname', nick)
+          .text(nick);
+
 
     this.ui.lists.nicknames.append(nick_element);
-}
+};
 
 /**
  * Creates a new hidden window if it doesn't exist already
@@ -403,7 +405,7 @@ EchoesUi.prototype.add_nickname = function(nick) {
 EchoesUi.prototype.add_window = function(name, type) {
     type = type || 'channel';
 
-    if (this.ui.wall.find('div[windowname="' + name + '"]').length == 0) {
+    if (this.ui.wall.find('div[windowname="' + name + '"]').length === 0) {
         this.ui.wall.append(
             $('<div>')
                 .attr('windowname', name)
@@ -420,14 +422,14 @@ EchoesUi.prototype.add_window = function(name, type) {
         }
     }
 
-    if (this.ui.lists.windows.find('li[windowname="' + name + '"]').length == 0) {
+    if (this.ui.lists.windows.find('li[windowname="' + name + '"]').length === 0) {
         this.ui.lists.windows.append(
             $('<li>')
                 .attr('windowname', name)
                 .text(name)
-        )
+        );
     }
-}
+};
 
 /**
  * Remove window by windowname property
@@ -438,7 +440,7 @@ EchoesUi.prototype.add_window = function(name, type) {
  */
 EchoesUi.prototype.remove_window = function(name) {
     this.ui.wall.find('div[windowname="' + name + '"]').remove();
-}
+};
 
 /**
  * Retrieve a window by windowname property
@@ -451,7 +453,7 @@ EchoesUi.prototype.remove_window = function(name) {
  */
 EchoesUi.prototype.get_window = function(name) {
     return this.ui.wall.find('div[windowname="' + name + '"]');
-}
+};
 
 /**
  * Sets the encryptionstate property for a window
@@ -484,7 +486,7 @@ EchoesUi.prototype.set_window_state = function(state, on_window) {
         this.log('setting active window icon to ' + state, 0);
         this.ui.buttons.encrypt.attr('class', this.assets.encrypt.icon_class[state]);
     }
-}
+};
 
 /**
  * Get the window encryptionstate value
@@ -496,7 +498,7 @@ EchoesUi.prototype.set_window_state = function(state, on_window) {
 EchoesUi.prototype.get_window_state = function(on_window) {
     var state = this.get_window(on_window).attr('encryptionstate');
     return (state ? state : 'unencrypted');
-}
+};
 
 /**
  * Shows a window on the wall and hides all others
@@ -549,7 +551,7 @@ EchoesUi.prototype.show_window = function(name) {
 
         self.progress(101);
     });
-}
+};
 
 EchoesUi.prototype.refresh_nicklist = function(window_name) {
     var self = this;
@@ -562,7 +564,7 @@ EchoesUi.prototype.refresh_nicklist = function(window_name) {
             self.add_nickname($(this).attr('nickname'));
         });
     }
-}
+};
 
 /**
  * Simluate a click on wither a nickname or channel window
@@ -579,7 +581,7 @@ EchoesUi.prototype.click_window = function(name) {
     } else {
         this.error('No such window: ' + name);
     }
-}
+};
 
 /**
  * Show or hide the encryption icon near the input.
@@ -598,7 +600,7 @@ EchoesUi.prototype.toggle_encrypt_icon = function(on_off) {
         this.ui.input.css('padding-left', '0px');
         this.ui.buttons.encrypt.hide('slide', {direction: 'left'}, 'fast');
     }
-}
+};
 
 /**
  * Displays a popup with an optional title or message
@@ -661,7 +663,7 @@ EchoesUi.prototype.popup = function(title, message, yes_text, no_text, yes_callb
 
     this.ui.popup.window.show();
     this.popup_center();
-}
+};
 
 /**
  * Close the popup window
@@ -670,7 +672,7 @@ EchoesUi.prototype.popup = function(title, message, yes_text, no_text, yes_callb
  */
 EchoesUi.prototype.popup_close = function() {
     this.ui.popup.window.hide();
-}
+};
 
 /**
  * Align popup wrapper to center of window
@@ -681,7 +683,7 @@ EchoesUi.prototype.popup_center = function() {
     // center div
     this.ui.popup.wrapper.css('margin-top', -this.ui.popup.wrapper.outerHeight()/2 + 'px');
     this.ui.popup.wrapper.css('margin-left', -this.ui.popup.wrapper.outerWidth()/2 + 'px');
-}
+};
 
 /**
  * Display progress with the appropriate percent
@@ -700,7 +702,7 @@ EchoesUi.prototype.progress = function(percent) {
         this.ui.progress_bar.fadeIn('fast');
     }
     this.ui.progress_bar.attr('value', percent);
-}
+};
 
 /**
  * Toggle the notification bubble for all windows
@@ -719,7 +721,7 @@ EchoesUi.prototype.notification_all_toggle = function(on_off) {
         this.ui.notification.bubble_all.hide();
         this.log('notification bubble disabled for all', 0);
     }
-}
+};
 
 /**
  * Add notification bubble to window tab.
@@ -754,4 +756,4 @@ EchoesUi.prototype.notification_window_toggle = function(window_name, on_off) {
             this.notification_all_toggle(false);
         }
     }
-}
+};
