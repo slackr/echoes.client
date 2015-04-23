@@ -171,8 +171,11 @@ EchoesSocket.prototype.attach_socket_events = function() {
             switch (window_object.attr('windowtype')) {
                 case 'channel':
                     var nicklist = window_object.find('ul:first');
-                    nicklist.find('li[nickname="' + nick + '"]').remove();
-                    self.client.ui.status(nick + ' disconnected!', window_name, false);
+                    var nicks_found = nicklist.find('li[nickname="' + nick + '"]');
+                    if (nicks_found.length > 0) {
+                        nicks_found.remove();
+                        self.client.ui.status(nick + ' disconnected!', window_name, false);
+                    }
                 break;
                 case 'nickname':
                     self.client.ui.status(nick + ' disconnected!', window_name, false);
