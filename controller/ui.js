@@ -380,7 +380,7 @@ EchoesUi.prototype.add_nickname = function(nick) {
         return;
     }
 
-    var nick_element = 
+    var nick_element =
         $('<li>')
           .attr('windowname', nick)
           .text(nick);
@@ -418,6 +418,7 @@ EchoesUi.prototype.add_window = function(name, type) {
         );
 
         if (type == 'nickname') {
+            this.error('To start end-to-end encryption, you and ' + name + ' must click the padlock button', name, false);
             this.status('Say hi to ' + name, name);
         }
     }
