@@ -136,6 +136,7 @@ EchoesSocket.prototype.attach_socket_events = function() {
         for (var i in list.channels) {
             self.client.ui.add_window(list.channels[i], 'channel');
         }
+        self.client.ui.status('You are in these channels: ' + list.channels.join(', '));
     });
     this.sio.on('*list', function(list){
         self.client.ui.status('Channel listing: ' + list.channels.join(', '), null, true);

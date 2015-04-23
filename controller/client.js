@@ -30,6 +30,7 @@ function EchoesClient() {
             '/connect': 'Initiate a new connection to the server. Identity will be re-authenticated',
             '/config': 'Modify the value of a config variable for the session: /config [key] [val]',
             '/disconnect': 'Disconnect the current session to the server',
+            '/exit': 'Disconnect the current session to the server and exit the app',
             '/clear': 'Clear the current window text',
             '/window': 'Switch to a new window: /window [windowname]',
             '/help': 'Show a list of available commands',
@@ -79,6 +80,8 @@ EchoesClient.prototype.execute_command = function(params) {
         case '/quit':
         case '/exit':
             self.ui.popup('Exit', 'Are you sure you exit the app?', 'EXIT', 'CANCEL', function() {
+                self.socket.sio.disconnect();
+                self.ui.popup_close();
                 window.close();
             });
         break;
@@ -147,7 +150,7 @@ EchoesClient.prototype.execute_command = function(params) {
         case '/private':
         case '/query':
             var query_nick = params[0];
-            
+
             this.ui.progress(10);
             this.socket.sio.emit('/pm', query_nick);
         break;
