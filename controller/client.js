@@ -80,7 +80,9 @@ EchoesClient.prototype.execute_command = function(params) {
         case '/quit':
         case '/exit':
             self.ui.popup('Exit', 'Are you sure you exit the app?', 'EXIT', 'CANCEL', function() {
-                self.socket.sio.disconnect();
+                if (self.socket.sio != null) {
+                    self.socket.sio.disconnect();
+                }
                 self.ui.popup_close();
                 window.close();
             });
