@@ -110,6 +110,10 @@ $(document).ready(function() {
         $client.execute_command(['/exit']);
     });
 
+    $client.ui.ui.buttons.help.click(function() {
+        $client.execute_command(['/help']);
+    });
+
     $client.ui.ui.buttons.send.click(function() {
         $client.send_echo();
     });

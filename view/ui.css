@@ -191,7 +191,7 @@ input:focus {
     padding: 10px;
 }
 
-#menu_windows, #menu_nicknames, #menu_exit {
+#menu_windows, #menu_nicknames, #menu_exit, #menu_help {
     -webkit-app-region: no-drag;
     cursor: pointer;
     padding: 5px;
@@ -200,10 +200,9 @@ input:focus {
     float: left;
     position: relative;
 }
-#menu_nicknames {
-    float: right;
-}
-#menu_exit {
+#menu_nicknames
+,#menu_exit
+,#menu_help {
     float: right;
 }
 

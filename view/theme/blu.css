@@ -118,7 +118,8 @@ rgb(66, 133, 244);
 ,#encrypt:hover
 ,#menu_nicknames:hover
 ,#menu_windows:hover
-,#menu_exit:hover {
+,#menu_exit:hover
+,#menu_help:hover {
     background-color: rgba(0, 0, 0, 0.1);
 }
 

@@ -38,6 +38,7 @@ function EchoesUi() {
             nicknames: $('#menu_nicknames'),
             windows: $('#menu_windows'),
             exit: $('#menu_exit'),
+            help: $('#menu_help'),
             encrypt: $('#encrypt'),
             send: $('#send'),
         },

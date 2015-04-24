@@ -28,10 +28,10 @@ function EchoesClient() {
         offline: {
             '/clear_storage': 'Delete identity data from storage',
             '/connect': 'Initiate a new connection to the server. Identity will be re-authenticated',
-            '/config': 'Modify the value of a config variable for the session: /config [key] [val]',
-            '/disconnect': 'Disconnect the current session to the server',
-            '/exit': 'Disconnect the current session to the server and exit the app',
+            '/disconnect': 'Disconnect from the server',
+            '/exit': 'Disconnect from the server and exit the app',
             '/clear': 'Clear the current window text',
+            '/config': 'Modify the value of a config variable for the session: /config [key] [val]',
             '/window': 'Switch to a new window: /window [windowname]',
             '/help': 'Show a list of available commands',
         },
@@ -39,12 +39,12 @@ function EchoesClient() {
             '/echo': 'Send regular echo to nick/#chan: /echo [target] [text]',
             '/eecho': 'Send encrypted echo to nickname: /eecho [nick] [text]',
             '/pm': 'Initiate a private message session with nick: /pm [nick]',
-            '/keyx': 'Initiate key exchange with nick: /keyx [nick]',
-            '/keyx_off': 'Disable encryption with nick (will also notify nick): /keyx_off [nick]',
+            '/keyx': 'Initiate key exchange for end-to-end encryption with nick: /keyx [nick]',
+            '/keyx_off': 'Disable end-to-end encryption with nick (will also notify nick): /keyx_off [nick]',
             '/join': 'Join a channel: /join [#chan]',
             '/part': 'Part a channel: /part [#chan]',
-            '/list': 'Retrieve a list of all active channels from the server',
-            '/ulist': 'Retrieve a list of channels you are in from the server',
+            '/list': 'Retrieve a list active channels from the server',
+            '/ulist': 'Retrieve a list of channels you have joined from the server',
             '/who': 'Show a list of users currently joined to a channel: /who [#chan]',
         }
     };
@@ -77,6 +77,9 @@ EchoesClient.prototype.execute_command = function(params) {
     }
 
     switch (command) {
+        case '/help':
+            this.show_help();
+        break;
         case '/quit':
         case '/exit':
             self.ui.popup('Exit', 'Are you sure you exit the app?', 'EXIT', 'CANCEL', function() {
@@ -1076,3 +1079,27 @@ EchoesClient.prototype.is_connected = function() {
     }
     return true;
 };
+
+/**
+ * Display available commands
+ */
+EchoesClient.prototype.show_help = function() {
+    for (var cmd_type in this.commands) {
+        this.ui.echo({
+            type: 'error',
+            echo: 'Available ' + cmd_type + ' commands:',
+            broadcast: false,
+            notify: false,
+            info: ' ',
+        });
+        for (var cmd in this.commands[cmd_type]) {
+            this.ui.echo({
+                type: 'status',
+                echo: cmd + ' - ' + this.commands[cmd_type][cmd],
+                broadcast: false,
+                notify: false,
+                info: ' ',
+            });
+        }
+    }
+}
