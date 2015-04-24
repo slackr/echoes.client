@@ -165,6 +165,7 @@ EchoesUi.prototype.echo = function(echo) {
     echo.encrypted = echo.encrypted || false;
     echo.avatar = echo.avatar || '';
     echo.info = echo.info || (echo.nick ? echo.nick + ' @ ' : '') + (new Date()).toLocaleString();
+    echo.notify = (echo.notify === false ? false : true);
 
 /*
     <div class='convo'>
@@ -244,7 +245,8 @@ EchoesUi.prototype.echo = function(echo) {
             .appendTo(this.get_window(this.ui.echoes.attr('windowname')));
     }
 
-    if (echo.window != this.active_window().attr('windowname')) {
+    if (echo.notify == true
+        && echo.window != this.active_window().attr('windowname')) {
         this.notification_window_toggle(echo.window, true);
     }
 
@@ -259,12 +261,13 @@ EchoesUi.prototype.echo = function(echo) {
  *
  * @returns {null}
  */
-EchoesUi.prototype.status = function(status, where, and_echoes) {
+EchoesUi.prototype.status = function(status, where, and_echoes, notify) {
     this.echo({
         type: 'status',
         echo: status,
         window: where,
-        broadcast: and_echoes
+        broadcast: and_echoes,
+        notify: notify,
     });
 };
 

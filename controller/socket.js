@@ -165,6 +165,8 @@ EchoesSocket.prototype.attach_socket_events = function() {
     this.sio.on('*disconnect', function(who) {
         var nick = who.nickname;
 
+        self.client.ui.remove_nickname(nick);
+
         self.client.ui.ui.lists.windows.find('li').each(function() {
             var window_name = $(this).attr('windowname');
             var window_object = self.client.ui.get_window(window_name);
@@ -179,14 +181,15 @@ EchoesSocket.prototype.attach_socket_events = function() {
                     }
                 break;
                 case 'nickname':
-                    self.client.ui.status(nick + ' disconnected!', window_name, false);
+                    if (window_name == nick) {
+                        self.client.ui.status(nick + ' disconnected!', window_name, false);
+                    }
                 break;
                 default:
-                    self.client.ui.status(nick + ' disconnected!', self.client.ui.ui.echoes.attr('windowname'), false);
+                    self.client.ui.status(nick + ' disconnected!', self.client.ui.ui.echoes.attr('windowname'), false, false);
                 break;
             }
         });
-        self.client.ui.remove_nickname(nick);
 
         if (self.client.get_nickchain_property(nick, 'symkey')
             || self.client.get_nickchain_property(nick, 'public_key')) {

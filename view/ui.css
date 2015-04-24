@@ -211,19 +211,29 @@ input:focus {
     list-style-type: none;
     width: 200px;
     position: fixed;
-    top: 50px;
+    /*top: 50px;*/
     height: 100%;
     display: none;
     z-index: 100;
     font-size: 15px;
-    padding: 10px 0px 10px 0px;
+    padding: 60px 0px 10px 0px;
     overflow-y: auto;
 }
 #nicknames {
     right: 0;
+    border-width: 0px 1px 1px 0px;
+    border-right-color: rgb(66, 133, 244);
+    border-bottom-color: rgb(66, 133, 244);
+    border-right-style: solid;
+    border-bottom-style: solid;
 }
 #windows {
     left: 0;
+    border-width: 0px 0px 1px 1px;
+    border-left-color: rgb(66, 133, 244);
+    border-bottom-color: rgb(66, 133, 244);
+    border-left-style: solid;
+    border-bottom-style: solid;
 }
 
 #nicknames > li, #windows > li {
