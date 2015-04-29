@@ -1,3 +1,4 @@
+/* global chrome */
 /**
  * Echoes Client
  *

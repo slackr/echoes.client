@@ -4,8 +4,9 @@
  * @author  Adrian@Slacknet
  * @license http://www.gnu.org/licenses/gpl-3.0.txt GPLv3
  */
-
-var AppConfig = {
+ 
+var AppConfig;
+AppConfig = {
     LOG_LEVEL: 3,
     WS_SERVER: 'wss://io.echoes.im/',
     USE_SYNC_STORAGE: true,

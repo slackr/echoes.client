@@ -1,3 +1,5 @@
+/* global EchoesSocket */
+/* global EchoesIdentity */
 /**
  * Echoes Client
  *

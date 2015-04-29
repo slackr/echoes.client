@@ -112,8 +112,8 @@ EchoesUi.prototype.attach_events = function() {
     });
 
     this.ui.lists.windows.on('click', 'li', function() {
-        var win =
-        self.show_window($(this).attr('windowname'));
+        var win = $(this).attr('windowname');
+        self.show_window(win);
         self.ui.lists.close_lists.click();
     });
     this.ui.lists.nicknames.on('click', 'li', function() {
@@ -579,7 +579,7 @@ EchoesUi.prototype.refresh_nicklist = function(window_name) {
  * @returns {null}
  */
 EchoesUi.prototype.click_window = function(name) {
-    win_object = this.ui.lists.windows.find('li[windowname="' + name + '"]');
+    var win_object = this.ui.lists.windows.find('li[windowname="' + name + '"]');
 
     if (win_object.length > 0) {
         win_object.click();

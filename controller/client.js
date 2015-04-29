@@ -1,3 +1,8 @@
+/* global AppConfig */
+/* global $ */
+/* global EchoesObject */
+/* global EchoesCrypto */
+/* global Promise */
 /**
  * Echoes Client
  *
@@ -664,7 +669,6 @@ EchoesClient.prototype.keyx_send_key = function(endpoint) {
         return;
     }
 
-    var self = this;
     var kc = this.get_nickchain_property(endpoint, 'keychain') || (this.crypto.browser_support.ec.supported ? 'keyx' : 'asym');
 
     this.ui.progress(10);
@@ -1102,4 +1106,4 @@ EchoesClient.prototype.show_help = function() {
             });
         }
     }
-}
+};
