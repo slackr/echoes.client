@@ -1,7 +1,7 @@
 {
     "name": "Echoes",
     "description": "End-to-End Encrypted Messaging",
-    "version": "0.1.6",
+    "version": "0.1.7",
     "default_locale": "en",
     "installs_allowed_from": [
         "*"
