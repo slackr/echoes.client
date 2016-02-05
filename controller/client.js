@@ -204,6 +204,10 @@ EchoesClient.prototype.execute_command = function(params) {
         break;
 
         default:
+            if (params.length == 0) {
+                params[0] = this.ui.active_window().attr('windowname');
+            }
+
             this.socket.sio.emit(command, params);
             this.log('passed unhandled command to server: ' + command + ' ' + params.join(' '), 0);
         break;
