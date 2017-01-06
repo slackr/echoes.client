@@ -246,8 +246,7 @@ EchoesUi.prototype.echo = function(echo) {
             .appendTo(this.get_window(this.ui.echoes.attr('windowname')));
     }
 
-    if (echo.notify == true
-        && echo.window != this.active_window().attr('windowname')) {
+    if (echo.notify === true && echo.window != this.active_window().attr('windowname')) {
         this.notification_window_toggle(echo.window, true);
     }
 
@@ -700,8 +699,8 @@ EchoesUi.prototype.popup_center = function() {
  * @returns {null}
  */
 EchoesUi.prototype.progress = function(percent) {
-    if (percent < 0
-        || percent > 100) {
+    if (percent < 0 || 
+        percent > 100) {
         this.ui.progress_bar.fadeOut('fast');
     } else {
         this.ui.progress_bar.fadeIn('fast');

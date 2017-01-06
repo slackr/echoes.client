@@ -860,7 +860,7 @@ EchoesClient.prototype.register_show = function(initial_message) {
         }
     }
 
-    this.ui.popup('New Identity', '', 'REGISTER', 'RECOVER',
+    this.ui.popup('New Identity', '', 'CREATE', 'RECOVER',
         function() {
             self.ui.progress(10);
             self.register_submit().catch(function(e) {
@@ -1076,10 +1076,10 @@ EchoesClient.prototype.connect = function() {
  * @returns {bool} Is the client connected?
  */
 EchoesClient.prototype.is_connected = function() {
-    if (typeof this.socket == 'undefined'
-        || typeof this.socket.sio == 'undefined'
-        || ! this.socket.sio
-        || ! this.socket.sio.connected) {
+    if (typeof this.socket == 'undefined' || 
+        typeof this.socket.sio == 'undefined' || 
+        ! this.socket.sio || 
+        ! this.socket.sio.connected) {
         return false;
     }
     return true;
