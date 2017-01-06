@@ -75,8 +75,7 @@ EchoesClient.prototype.execute_command = function(params) {
     var command = params[0];
     params.shift();
 
-    if (typeof this.commands.offline[command] == 'undefined'
-        && ! this.is_connected()) {
+    if (typeof this.commands.offline[command] == 'undefined' && ! this.is_connected()) {
         this.ui.error('Not connected to a server. /connect first!');
         return;
     }
@@ -88,7 +87,7 @@ EchoesClient.prototype.execute_command = function(params) {
         case '/quit':
         case '/exit':
             self.ui.popup('Exit', 'Are you sure you exit the app?', 'EXIT', 'CANCEL', function() {
-                if (self.socket.sio != null) {
+                if (self.socket.sio !== null) {
                     self.socket.sio.disconnect();
                 }
                 self.ui.popup_close();
@@ -204,7 +203,7 @@ EchoesClient.prototype.execute_command = function(params) {
         break;
 
         default:
-            if (params.length == 0) {
+            if (params.length === 0) {
                 params[0] = this.ui.active_window().attr('windowname');
             }
 
@@ -274,8 +273,7 @@ EchoesClient.prototype.auto_join_channels = function() {
  * @returns {Promise} Either a .resolve(null) or .reject('error message')
  */
 EchoesClient.prototype.keyx_derive_key = function(nick, private_key, public_key) {
-    if (! private_key
-        || ! public_key) {
+    if (! private_key || ! public_key) {
         this.ui.log('keyx symkey derivation failed, pub: ' + public_key + ', priv: ' + private_key, 3);
         return Promise.reject('Invalid public or private key');
     }
@@ -354,13 +352,11 @@ EchoesClient.prototype.decrypt_encrypted_echo = function(nick, echo) { // echo i
     }
 
     var kc = this.get_nickchain_property(nick, 'keychain');
-    if (kc === null
-        || this.get_nickchain_property(nick, 'symkey') === null) {
+    if (kc === null || this.get_nickchain_property(nick, 'symkey') === null) {
         this.ui.error("Unable to decrypt echo from " + nick + ". No decryption key available. Initiate a key exchange.");
         return;
     }
-    if (typeof echo != 'object'
-        || echo.length === 0) {
+    if (typeof echo != 'object' || echo.length === 0) {
         this.ui.log('invalid encrypted echo from ' + nick + ': ' + typeof echo, 3);
         this.ui.error("Could not decrypt echo from " + nick + ". It appears invalid.");
         return;
@@ -630,11 +626,12 @@ EchoesClient.prototype.keyx_new_key = function(endpoint, kc) {
                 self.ui.progress(101);
                 self.crypto.keychain[kc].exported.hash = self.crypto.resulting_hash.match(/.{1,8}/g).join(' ');
                 self.ui.status('Successfully generated new session key (' + kc + '): ' + self.crypto.keychain[kc].exported.hash, null, true);
-                if (typeof endpoint != 'undefined'
-                    && endpoint !== null) {
+                
+                if (typeof endpoint != 'undefined' && endpoint !== null) {
                     self.log('sending ' + kc + ' public key to endpoint: ' + endpoint, 0);
                     self.keyx_send_key(endpoint);
                 }
+
             }).catch(function(e) {
                 self.ui.progress(101);
                 self.ui.error({ error: 'Failed to hash exported ' + kc + ' key', debug: e.toString() });

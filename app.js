@@ -81,10 +81,10 @@ $(document).ready(function() {
 
     $(window).keydown(function(event) {
         // change input focus depending on what window is visible
-        if (! (event.ctrlKey
-               || event.metaKey
-               || event.altKey
-               || $client.ui.ui.popup.window.is(':visible'))) {
+        if (! (event.ctrlKey || 
+               event.metaKey || 
+               event.altKey  || 
+               $client.ui.ui.popup.window.is(':visible'))) {
             $client.ui.ui.input.focus();
         }
 
